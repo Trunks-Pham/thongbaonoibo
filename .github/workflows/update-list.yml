@@ -2,8 +2,8 @@ name: Update File List
 
 on:
   push:
-    paths:
-      - 'notifications/**'
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
