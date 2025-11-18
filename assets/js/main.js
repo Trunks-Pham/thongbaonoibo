@@ -1,10 +1,12 @@
 const NOTIFICATION_FOLDER = (() => {
     const currentPath = window.location.pathname;
     const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-    return basePath + 'notifications/';
+    const notifPath = basePath + 'notifications/';
+    
+    console.log('🔍 NOTIFICATION_FOLDER:', notifPath);
+    return notifPath;
 })();
 
-const API_ENDPOINT = './notifications/index.php';
 let allFiles = [];
 
 // Các "trang" (screens)
@@ -47,21 +49,36 @@ async function renderNotificationList(container) {
     container.innerHTML = '<div class="loading">Đang tải danh sách thông báo...</div>';
 
     try {
-        const response = await fetch(API_ENDPOINT);
-        if (!response.ok) throw new Error('Không thể lấy danh sách');
+        // Fetch folder để parse HTML directory listing
+        const response = await fetch(NOTIFICATION_FOLDER);
+        if (!response.ok) throw new Error('Không thể truy cập thư mục');
 
-        const fileList = await response.json();
+        const text = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const links = doc.querySelectorAll('a');
+
         const baseURL = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
 
-        allFiles = fileList.map(file => ({
-            filename: file.filename,
-            dateStr: file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) ? 
-                     file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)[1].replace(/_/g, '-') : '0000-00-00',
-            fullPath: NOTIFICATION_FOLDER + encodeURIComponent(file.filename),
-            shareableURL: file.path.startsWith('http') ? file.path : baseURL + file.path
-        }));
+        allFiles = Array.from(links)
+            .map(a => decodeURIComponent(a.getAttribute('href')))
+            .filter(href => href && (href.toLowerCase().endsWith('.pdf') || href.toLowerCase().endsWith('.html')))
+            .map(href => {
+                const clean = href.replace(/\\/g, '/').trim();
+                const filename = clean.split('/').pop();
+                if (!filename || filename.startsWith('.') || filename.includes('Parent Directory')) return null;
+
+                const dateMatch = filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/);
+                const dateStr = dateMatch ? dateMatch[1].replace(/_/g, '-') : '0000-00-00';
+                const fullPath = NOTIFICATION_FOLDER + encodeURIComponent(filename);
+                const shareableURL = baseURL + 'notifications/' + encodeURIComponent(filename);
+
+                return { filename, dateStr, fullPath, shareableURL };
+            })
+            .filter(Boolean);
 
         allFiles.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+
         renderMenuInSidebar(allFiles);
 
         container.innerHTML = `
