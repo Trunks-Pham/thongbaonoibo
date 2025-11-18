@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Thông Báo Nội Bộ</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+    <button id="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>Thông Báo Nội Bộ</h2>
+        </div>
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="🔍 Tìm thông báo..." oninput="filterFiles()">
+        </div>
+        <ul id="file-list">
+            <li class="loading">Đang tải danh sách thông báo...</li>
+        </ul>
+    </div>
+
+    <div id="main-content">
+        <div id="file-path-bar" class="path-bar" style="display:none;">
+            <strong>Đường dẫn file:</strong> 
+            <span id="current-path"></span>
+            <button onclick="copyPath()" title="Copy đường dẫn">📋</button>
+        </div>
+        <div id="viewer-container">
+            <div class="message-box">
+                <h3>Chào mừng bạn đến Hệ thống Thông báo</h3>
+                <p>Vui lòng chọn một thông báo từ menu bên trái để xem nội dung.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
