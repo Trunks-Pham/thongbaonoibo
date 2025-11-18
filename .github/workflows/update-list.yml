@@ -9,36 +9,47 @@ on:
 jobs:
   update-list:
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
+
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
       - name: Generate list.json
         run: |
-          cd notifications
-          node -e "
+          node << 'EOF'
           const fs = require('fs');
-          
-          const files = fs.readdirSync('.')
-            .filter(f => (f.endsWith('.pdf') || f.endsWith('.html')) && !f.startsWith('.') && f !== 'list.json')
-            .map(f => ({ filename: f, path: '/notifications/' + encodeURIComponent(f) }))
+          const path = require('path');
+
+          const folder = 'notifications';
+          const output = path.join(folder, 'list.json');
+
+          const files = fs.readdirSync(folder)
+            .filter(f => 
+              (f.toLowerCase().endsWith('.pdf') || f.toLowerCase().endsWith('.html')) &&
+              f !== 'list.json' &&
+              !f.startsWith('.')
+            )
+            .map(f => ({
+              filename: f,
+              path: '/notifications/' + encodeURIComponent(f)
+            }))
             .sort((a, b) => b.filename.localeCompare(a.filename));
-          
-          fs.writeFileSync('list.json', JSON.stringify(files, null, 2));
-          console.log('✅ Generated list.json with ' + files.length + ' files');
-          "
-      
-      - name: Commit and push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add notifications/list.json
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "ℹ️ No changes to commit"
-          else
-            git commit -m "chore: auto update file list [skip ci]"
-            git push
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          fs.writeFileSync(output, JSON.stringify(files, null, 2));
+          console.log("Generated", output, "→", files.length, "files");
+          EOF
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto update notifications list.json [skip ci]"
+          file_pattern: notifications/list.json
+          commit_user_name: GitHub Action
+          commit_user_email: action@github.com
