@@ -1,12 +1,10 @@
 const NOTIFICATION_FOLDER = (() => {
     const currentPath = window.location.pathname;
     const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-    const notifPath = basePath + 'notifications/';
-    
-    console.log('🔍 NOTIFICATION_FOLDER:', notifPath);
-    return notifPath;
+    return basePath + 'notifications/';
 })();
 
+const API_ENDPOINT = NOTIFICATION_FOLDER + 'list.json';
 let allFiles = [];
 
 // Các "trang" (screens)
@@ -20,7 +18,7 @@ const routes = {
 function showScreen(renderFunction) {
     const viewerEl = document.getElementById('viewer-container');
     const pathBarEl = document.getElementById('file-path-bar');
-    pathBarEl.style.display = 'none'; // Ẩn thanh path khi không xem file
+    pathBarEl.style.display = 'none';
     viewerEl.innerHTML = '';
     renderFunction(viewerEl);
 }
@@ -44,41 +42,26 @@ function renderHome(container) {
     `;
 }
 
-// Trang danh sách thông báo (code cũ của bạn, chỉ chuyển vào đây)
+// Trang danh sách thông báo - Load từ list.json
 async function renderNotificationList(container) {
     container.innerHTML = '<div class="loading">Đang tải danh sách thông báo...</div>';
 
     try {
-        // Fetch folder để parse HTML directory listing
-        const response = await fetch(NOTIFICATION_FOLDER);
-        if (!response.ok) throw new Error('Không thể truy cập thư mục');
+        const response = await fetch(API_ENDPOINT);
+        if (!response.ok) throw new Error('Không thể lấy danh sách');
 
-        const text = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-        const links = doc.querySelectorAll('a');
-
+        const fileList = await response.json();
         const baseURL = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
 
-        allFiles = Array.from(links)
-            .map(a => decodeURIComponent(a.getAttribute('href')))
-            .filter(href => href && (href.toLowerCase().endsWith('.pdf') || href.toLowerCase().endsWith('.html')))
-            .map(href => {
-                const clean = href.replace(/\\/g, '/').trim();
-                const filename = clean.split('/').pop();
-                if (!filename || filename.startsWith('.') || filename.includes('Parent Directory')) return null;
-
-                const dateMatch = filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/);
-                const dateStr = dateMatch ? dateMatch[1].replace(/_/g, '-') : '0000-00-00';
-                const fullPath = NOTIFICATION_FOLDER + encodeURIComponent(filename);
-                const shareableURL = baseURL + 'notifications/' + encodeURIComponent(filename);
-
-                return { filename, dateStr, fullPath, shareableURL };
-            })
-            .filter(Boolean);
+        allFiles = fileList.map(file => ({
+            filename: file.filename,
+            dateStr: file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) ? 
+                     file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)[1].replace(/_/g, '-') : '0000-00-00',
+            fullPath: NOTIFICATION_FOLDER + encodeURIComponent(file.filename),
+            shareableURL: file.path.startsWith('http') ? file.path : baseURL + file.path
+        }));
 
         allFiles.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
-
         renderMenuInSidebar(allFiles);
 
         container.innerHTML = `
@@ -93,7 +76,7 @@ async function renderNotificationList(container) {
     }
 }
 
-// Render menu vào sidebar (tách riêng để gọi lại)
+// Render menu vào sidebar
 function renderMenuInSidebar(files) {
     const fileListEl = document.getElementById('file-list');
     fileListEl.innerHTML = '';
@@ -172,16 +155,15 @@ function copyPath() {
     const url = document.getElementById('current-path').textContent;
     navigator.clipboard.writeText(url).then(() => {
         const btn = document.querySelector('#file-path-bar button');
-        const oldText = btn.innerHTML;          // lưu lại icon cũ (📋)
-        btn.innerHTML = '✓ Đã copy!';            // đổi thành tick + chữ
-        btn.style.color = '#27ae60';             // màu xanh lá cho đẹp
+        const oldText = btn.innerHTML;
+        btn.innerHTML = '✓ Đã copy!';
+        btn.style.color = '#27ae60';
         
         setTimeout(() => {
-            btn.innerHTML = oldText;             // trả lại icon cũ
-            btn.style.color = '';                // bỏ màu xanh
+            btn.innerHTML = oldText;
+            btn.style.color = '';
         }, 2000);
     }).catch(() => {
-        // nếu lỗi thì vẫn hiện nhẹ nhàng thay vì alert
         const btn = document.querySelector('#file-path-bar button');
         const oldText = btn.innerHTML;
         btn.innerHTML = '✕ Lỗi copy';
@@ -207,7 +189,6 @@ function filterFiles() {
 function router() {
     let path = window.location.hash.slice(1) || '/';
     
-    // Hỗ trợ xem trực tiếp file qua hash (tùy chọn)
     if (path.startsWith('/view/')) {
         const filename = decodeURIComponent(path.slice(6));
         const file = allFiles.find(f => f.filename === filename);
@@ -227,8 +208,7 @@ function router() {
 window.addEventListener('hashchange', router);
 window.addEventListener('load', () => {
     router();
-    // Load danh sách file ngay từ đầu để search và xem nhanh
     if (allFiles.length === 0) {
-        fetch(NOTIFICATION_FOLDER).then(() => renderNotificationList(document.getElementById('viewer-container')));
+        renderNotificationList(document.getElementById('viewer-container'));
     }
 });

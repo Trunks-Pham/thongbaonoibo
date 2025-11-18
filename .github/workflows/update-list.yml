@@ -1,0 +1,40 @@
+name: Update File List
+
+on:
+  push:
+    paths:
+      - 'notifications/**'
+  workflow_dispatch:
+
+jobs:
+  update-list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Generate list.json
+        run: |
+          cd notifications
+          node -e "
+          const fs = require('fs');
+          
+          const files = fs.readdirSync('.')
+            .filter(f => (f.endsWith('.pdf') || f.endsWith('.html')) && !f.startsWith('.') && f !== 'list.json')
+            .map(f => ({ filename: f, path: '/notifications/' + encodeURIComponent(f) }))
+            .sort((a, b) => b.filename.localeCompare(a.filename));
+          
+          fs.writeFileSync('list.json', JSON.stringify(files, null, 2));
+          console.log('✅ Generated list.json with ' + files.length + ' files');
+          "
+      
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add notifications/list.json
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            git commit -m "chore: auto update file list [skip ci]"
+            git push
+          fi
