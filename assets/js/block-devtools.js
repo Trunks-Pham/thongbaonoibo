@@ -1,61 +1,69 @@
-// ================== CHẶN DEVTOOLS – PHIÊN BẢN DÀNH RIÊNG CHO PRODUCTION (ỔN ĐỊNH 100%) ==================
+// ================== CHẶN DEVTOOLS – PHIÊN BẢN HOÀN HẢO CHO PRODUCTION 2025 ==================
 (function () {
     'use strict';
 
-    // ============ CHỐT AN TOÀN CHO ADMIN (bạn thôi) ============
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('unlock') === 'NhanVienKhongBietCaiNay2025') {
-        console.log('%c✅ Admin mode: DevTools đã được mở khóa!', 'color:green;font-size:18px');
-        return; // Không chặn gì cả nếu có ?unlock=NhanVienKhongBietCaiNay2025
+    // ======== CHỐT AN TOÀN CHO ADMIN (bạn thôi) ========
+    if (location.search.includes('unlock=admin2025xyz')) {
+        console.log('%c✅ Đã mở khóa DevTools (admin mode)', 'color:#27ae60;font-size:18px');
+        return; // Không chặn gì cả
     }
 
-    // ============ CHỈ CHẶN NHỮNG THỨ THẬT SỰ CẦN ============
-    // 1. Chặn F12 + Ctrl+Shift+I/J/C + Ctrl+U
-    document.onkeydown = function (e) {
-        if (e.keyCode === 123 || 
-            (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) ||
-            (e.ctrlKey && e.keyCode === 85)) {
+    // ======== CHỈ CHẠY KHI KHÔNG PHẢI ADMIN ========
+    
+    // 1. Chặn phím tắt (F12, Ctrl+Shift+I, Ctrl+U...)
+    document.addEventListener('keydown', function (e) {
+        if (
+            e.keyCode === 123 ||                                                         // F12
+            (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||       // Ctrl+Shift+I/J
+            (e.ctrlKey && e.keyCode === 85)                                              // Ctrl+U
+        ) {
             e.preventDefault();
-            e.stopPropagation();
-            return false;
+            e.stopImmediatePropagation();
         }
-    };
+    }, true);
 
-    // 2. Chặn chuột phải (nhẹ nhàng, không alert ồn ào)
-    document.oncontextmenu = function (e) {
-        e.preventDefault();
-        return false;
-    };
+    // 2. Chặn chuột phải
+    document.addEventListener('contextmenu', e => e.preventDefault());
 
-    // 3. Chặn chọn văn bản + kéo thả (ngăn copy nội dung dễ dàng)
-    document.onselectstart = function () { return false; };
-    document.ondragstart   = function () { return false; };
+    // 3. Chặn chọn text + kéo thả (ngăn copy dễ dàng)
+    document.onselectstart = () => false;
+    document.ondragstart = () => false;
 
-    // 4. Phát hiện DevTools mở theo kích thước (tăng threshold lên để tránh nhầm)
-    setInterval(function () {
-        if (window.outerHeight - window.innerHeight > 300 || 
-            window.outerWidth - window.innerWidth > 300) {
-            document.body.innerHTML = `
-                <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#e74c3c;color:#fff;z-index:99999;
-                           display:flex;align-items:center;justify-content:center;font-size:1.8rem;text-align:center;padding:20px;">
-                    Trình duyệt của bạn đang ở chế độ Developer Tools.<br>
-                    Vui lòng tắt DevTools để tiếp tục sử dụng hệ thống nội bộ.
+    // 4. Phát hiện DevTools bằng kích thước – threshold CAO để tránh nhầm
+    setInterval(() => {
+        if (
+            window.outerWidth - window.innerWidth > 350 ||   // tăng lên 350px mới trigger
+            window.outerHeight - window.innerHeight > 350
+        ) {
+            document.documentElement.innerHTML = `
+                <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#c0392b;color:#fff;z-index:999999;
+                            display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.6rem;padding:20px;">
+                    <div>
+                        <h2>DevTools bị cấm trên hệ thống nội bộ</h2>
+                        <p>Vui lòng tắt cửa sổ Developer Tools để tiếp tục.</p>
+                    </div>
                 </div>`;
         }
-    }, 800);
+    }, 1000);
 
-    // 5. Debugger trap nhẹ (không làm treo máy, chỉ hiện thông báo)
-    setInterval(function () {
-        const t0 = Date.now();
+    // 5. Debugger trap NHẸ NHẤT – không làm treo máy, không override console.log
+    let devtoolsOpen = false;
+    setInterval(() => {
+        const before = Date.now();
         debugger;
-        if (Date.now() - t0 > 120) {
-            document.body.innerHTML = `
-                <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#c0392b;color:#fff;z-index:99999;
-                           display:flex;align-items:center;justify-content:center;font-size:1.8rem;text-align:center;">
-                    Vui lòng tắt chế độ Debug / DevTools để xem thông báo.<br><br>
-                    Hệ thống nội bộ không cho phép sử dụng công cụ lập trình viên.
-                </div>`;
+        if (Date.now() - before > 150) {  // chỉ trigger khi thực sự bị pause
+            if (!devtoolsOpen) {
+                devtoolsOpen = true;
+                document.documentElement.innerHTML = `
+                    <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#e74c3c;color:#fff;z-index:999999;
+                                display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.6rem;">
+                        <div>
+                            <h2>Không được sử dụng DevTools</h2>
+                            <p>Hệ thống nội bộ không cho phép chế độ debug.</p>
+                        </div>
+                    </div>`;
+            }
         }
-    }, 1500);
+    }, 2000);
 
 })();
