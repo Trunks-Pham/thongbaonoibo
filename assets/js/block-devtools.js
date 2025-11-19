@@ -1,68 +1,67 @@
-// ================== CHẶN DEVTOOLS – PHIÊN BẢN HOÀN HẢO CHO PRODUCTION 2025 ==================
+// ================== CHẶN DEVTOOLS HOÀN HẢO – KHÔNG CHẶN Ctrl+F, Ctrl+P... ==================
 (function () {
     'use strict';
 
-    // ======== CHỐT AN TOÀN CHO ADMIN (bạn thôi) ========
+    // === CHỐT AN TOÀN CHO BẠN (admin) ===
     if (location.search.includes('unlock=admin2025xyz')) {
-        console.log('%c✅ Đã mở khóa DevTools (admin mode)', 'color:#27ae60;font-size:18px');
-        return; // Không chặn gì cả
+        console.log('%c✅ Đã mở khóa DevTools (admin)', 'color:green;font-size:18px');
+        return;
     }
 
-    // ======== CHỈ CHẠY KHI KHÔNG PHẢI ADMIN ========
-    
-    // 1. Chặn phím tắt (F12, Ctrl+Shift+I, Ctrl+U...)
+    // === CHỈ CHẶN ĐÚNG NHỮNG PHÍM MUỐN CHẶN ===
     document.addEventListener('keydown', function (e) {
-        if (
-            e.keyCode === 123 ||                                                         // F12
-            (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||       // Ctrl+Shift+I/J
-            (e.ctrlKey && e.keyCode === 85)                                              // Ctrl+U
-        ) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-        }
-    }, true);
+        // Chỉ chặn đúng các tổ hợp mở DevTools + View Source
+        const isDevToolsShortcut = 
+            e.keyCode === 123 ||                                                            // F12
+            (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I / J / C
+            (e.ctrlKey && e.shiftKey && e.keyCode === 75) ||                                // Ctrl+Shift+K (Firefox)
+            (e.ctrlKey && e.keyCode === 85) ||                                              // Ctrl+U (view source)
+            (e.metaKey && e.altKey && (e.keyCode === 73 || e.keyCode === 74));              // Cmd+Option+I/J (Mac)
 
-    // 2. Chặn chuột phải
+        if (isDevToolsShortcut) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Không alert gì cả cho nó "êm", nhân viên chỉ thấy không mở được là xong
+            return false;
+        }
+
+        // === KHÔNG chặn các phím bình thường người dùng hay dùng ===
+        // Ctrl+F, Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+P, Ctrl+Z... vẫn hoạt động bình thường
+    }, false); // dùng bubbling phase, không capture
+
+    // Chặn chuột phải (nhẹ nhàng)
     document.addEventListener('contextmenu', e => e.preventDefault());
 
-    // 3. Chặn chọn text + kéo thả (ngăn copy dễ dàng)
+    // Chặn chọn text + kéo thả (ngăn copy dễ dàng)
     document.onselectstart = () => false;
-    document.ondragstart = () => false;
+    document.ondragstart   = () => false;
 
-    // 4. Phát hiện DevTools bằng kích thước – threshold CAO để tránh nhầm
+    // Phát hiện DevTools mở bằng kích thước cửa sổ
     setInterval(() => {
-        if (
-            window.outerWidth - window.innerWidth > 350 ||   // tăng lên 350px mới trigger
-            window.outerHeight - window.innerHeight > 350
-        ) {
+        if (window.outerWidth - window.innerWidth > 350 || 
+            window.outerHeight - window.innerHeight > 350) {
             document.documentElement.innerHTML = `
                 <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#c0392b;color:#fff;z-index:999999;
                             display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.6rem;padding:20px;">
-                    <div>
-                        <h2>DevTools bị cấm trên hệ thống nội bộ</h2>
-                        <p>Vui lòng tắt cửa sổ Developer Tools để tiếp tục.</p>
-                    </div>
+                    <h2>DevTools bị cấm</h2>
+                    <p>Vui lòng tắt cửa sổ Developer Tools để tiếp tục sử dụng hệ thống.</p>
                 </div>`;
         }
     }, 1000);
 
-    // 5. Debugger trap NHẸ NHẤT – không làm treo máy, không override console.log
-    let devtoolsOpen = false;
+    // Debugger trap nhẹ (chỉ hiện thông báo, không treo máy)
+    let opened = false;
     setInterval(() => {
-        const before = Date.now();
+        const start = Date.now();
         debugger;
-        if (Date.now() - before > 150) {  // chỉ trigger khi thực sự bị pause
-            if (!devtoolsOpen) {
-                devtoolsOpen = true;
-                document.documentElement.innerHTML = `
-                    <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#e74c3c;color:#fff;z-index:999999;
-                                display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.6rem;">
-                        <div>
-                            <h2>Không được sử dụng DevTools</h2>
-                            <p>Hệ thống nội bộ không cho phép chế độ debug.</p>
-                        </div>
-                    </div>`;
-            }
+        if (Date.now() - start > 150 && !opened) {
+            opened = true;
+            document.documentElement.innerHTML = `
+                <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#e74c3c;color:#fff;z-index:999999;
+                            display:flex;align-items:center;justify-content:center;text-align:center;">
+                    <h2>Không được sử dụng DevTools</h2>
+                    <p>Hệ thống nội bộ không cho phép chế độ debug.</p>
+                </div>`;
         }
     }, 2000);
 
