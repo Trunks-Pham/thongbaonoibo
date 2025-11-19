@@ -3,25 +3,27 @@ name: Update File List
 on:
   push:
     paths:
-      - 'notifications/**'
-  workflow_dispatch:
+      - 'notifications/**'   # Bất kỳ file nào trong thư mục notifications đều trigger
+  workflow_dispatch:        # Cho phép chạy thủ công từ GitHub
 
 jobs:
   update-list:
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write
+      contents: write       # Cần quyền ghi để commit list.json
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # Đảm bảo có full history (an toàn hơn)
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20      # Dùng Node 20 cho nhanh & mới nhất (hoặc giữ 18 cũng được)
 
-      - name: Generate list.json
+      - name: Generate list.json (hỗ trợ mọi định dạng)
         run: |
           node << 'EOF'
           const fs = require('fs');
@@ -30,26 +32,50 @@ jobs:
           const folder = 'notifications';
           const output = path.join(folder, 'list.json');
 
+          // Danh sách các định dạng bạn muốn hiển thị trong hệ thống
+          const supportedExtensions = [
+            '.pdf', '.html', '.htm',
+            '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif', '.bmp',
+            '.mp4', '.webm', '.ogg', '.mov',
+            '.mp3', '.wav', '.m4a', '.aac',
+            '.txt', '.log', '.csv', '.md',
+            '.docx', '.xlsx', '.pptx'   // Nếu sau này muốn hỗ trợ Office thì thêm vào đây
+          ];
+
           const files = fs.readdirSync(folder)
-            .filter(f => 
-              (f.toLowerCase().endsWith('.pdf') || f.toLowerCase().endsWith('.html')) &&
-              f !== 'list.json' &&
-              !f.startsWith('.')
-            )
-            .map(f => ({
-              filename: f,
-              path: '/notifications/' + encodeURIComponent(f)
+            .filter(f => {
+              if (f === 'list.json' || f.startsWith('.')) return false;
+              const ext = path.extname(f).toLowerCase();
+              return supportedExtensions.includes(ext);
+            })
+            .map(filename => ({
+              filename,
+              path: `/notifications/${encodeURIComponent(filename)}`,
+              // Optional: thêm type để frontend dùng (tùy chọn, không bắt buộc)
+              type: getType(filename)
             }))
-            .sort((a, b) => b.filename.localeCompare(a.filename));
+            .sort((a, b) => b.filename.localeCompare(a.filename)); // Mới nhất lên đầu
+
+          function getType(filename) {
+            const ext = path.extname(filename).toLowerCase();
+            if (['.jpg','.jpeg','.png','.gif','.webp','.svg','.avif','.bmp'].includes(ext)) return 'image';
+            if (['.mp4','.webm','.ogg','.mov'].includes(ext)) return 'video';
+            if (['.mp3','.wav','.m4a','.aac'].includes(ext)) return 'audio';
+            if (ext === '.pdf') return 'pdf';
+            if (['.html','.htm'].includes(ext)) return 'html';
+            if (['.txt','.log','.csv','.md'].includes(ext)) return 'text';
+            return 'other';
+          }
 
           fs.writeFileSync(output, JSON.stringify(files, null, 2));
-          console.log("Generated", output, "→", files.length, "files");
+          console.log(`Đã tạo ${output} → ${files.length} files`);
           EOF
 
-      - name: Commit and Push changes
+      - name: Commit & Push nếu có thay đổi
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: auto update notifications list.json [skip ci]"
+          commit_message: "chore: auto update notifications/list.json [skip ci]"
           file_pattern: notifications/list.json
-          commit_user_name: GitHub Action
-          commit_user_email: action@github.com
+          commit_user_name: GitHub Actions Bot
+          commit_user_email: actions@github.com
+          push_options: --force-with-lease   # An toàn hơn

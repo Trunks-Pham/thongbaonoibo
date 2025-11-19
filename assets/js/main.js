@@ -3,18 +3,11 @@ const NOTIFICATION_FOLDER = (() => {
     const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
     return basePath + 'notifications/';
 })();
-
 const API_ENDPOINT = NOTIFICATION_FOLDER + 'list.json';
 let allFiles = [];
 
-// Các "trang" (screens)
-const routes = {
-    '/': renderHome,
-    '/danh-sach': renderNotificationList,
-    '/404': renderNotFound
-};
+const routes = { '/': renderHome, '/danh-sach': renderNotificationList, '/404': renderNotFound };
 
-// Hàm render chung
 function showScreen(renderFunction) {
     const viewerEl = document.getElementById('viewer-container');
     const pathBarEl = document.getElementById('file-path-bar');
@@ -23,7 +16,6 @@ function showScreen(renderFunction) {
     renderFunction(viewerEl);
 }
 
-// Trang Home
 function renderHome(container) {
     container.innerHTML = `
         <div class="message-box home-screen">
@@ -42,103 +34,169 @@ function renderHome(container) {
     `;
 }
 
-// Trang danh sách thông báo - Load từ list.json
 async function renderNotificationList(container) {
     container.innerHTML = '<div class="loading">Đang tải danh sách thông báo...</div>';
-
     try {
         const response = await fetch(API_ENDPOINT);
         if (!response.ok) throw new Error('Không thể lấy danh sách');
-
         const fileList = await response.json();
         const baseURL = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-
+        
         allFiles = fileList.map(file => ({
             filename: file.filename,
             dateStr: file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) ?
                 file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)[1].replace(/_/g, '-') : '0000-00-00',
             fullPath: NOTIFICATION_FOLDER + encodeURIComponent(file.filename),
-            shareableURL: file.path.startsWith('http') ? file.path : baseURL + file.path
+            shareableURL: file.path && file.path.startsWith('http') ? file.path : baseURL + (file.path || '/notifications/' + encodeURIComponent(file.filename))
         }));
-
+        
         allFiles.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
         renderMenuInSidebar(allFiles);
-
+        
         container.innerHTML = `
             <div class="message-box">
                 <h3>Chọn một thông báo từ menu bên trái</h3>
                 <p>Hoặc sử dụng ô tìm kiếm để lọc nhanh.</p>
             </div>
         `;
-
     } catch (err) {
         container.innerHTML = `<div class="message-box" style="color:red;">Lỗi: ${err.message}</div>`;
     }
 }
 
-// Render menu vào sidebar
+// ==== Xác định loại file ====
+function getFileType(filename) {
+    const ext = filename.toLowerCase().split('.').pop();
+    const images = ['jpg','jpeg','png','gif','webp','bmp','svg','avif','ico'];
+    const videos = ['mp4','webm','ogg','mov','avi','mkv'];
+    const audios = ['mp3','wav','ogg','m4a','aac'];
+    if (ext === 'pdf') return 'pdf';
+    if (ext === 'html' || ext === 'htm') return 'html';
+    if (images.includes(ext)) return 'image';
+    if (videos.includes(ext)) return 'video';
+    if (audios.includes(ext)) return 'audio';
+    if (['txt','log','csv','md'].includes(ext)) return 'text';
+    return 'other';
+}
+
+// ==== Render menu với icon phù hợp ====
 function renderMenuInSidebar(files) {
     const fileListEl = document.getElementById('file-list');
     fileListEl.innerHTML = '';
-
     if (files.length === 0) {
         fileListEl.innerHTML = '<li style="padding:30px;text-align:center;color:#888;">Chưa có thông báo nào.</li>';
         return;
     }
-
     files.forEach(file => {
         const li = document.createElement('li');
         li.className = 'file-item';
 
-        const isPdf = file.filename.toLowerCase().endsWith('.pdf');
-        const icon = isPdf ? '📄' : '📝';
+        const type = getFileType(file.filename);
+        let icon = '📄';
+        if (type === 'image') icon = '🖼️';
+        else if (type === 'video') icon = '🎥';
+        else if (type === 'audio') icon = '🎵';
+        else if (type === 'pdf') icon = '📄';
+        else if (type === 'html') icon = '🌐';
+        else if (type === 'text') icon = '📝';
+
         const cleanName = file.filename
             .replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '')
-            .replace(/\.(pdf|html?)$/i, '')
+            .replace(/\.[^.]+$/, '')
             .replace(/[-_]+/g, ' ')
             .trim();
+
+        const datePart = file.filename.split('_')[0].replace(/_/g, '-');
 
         li.innerHTML = `
             <span class="file-icon">${icon}</span>
             <div class="file-info">
                 <div class="file-name">${cleanName || file.filename}</div>
-                <div class="file-date">${file.filename.split('_')[0].replace(/_/g, '-')}</div>
+                <div class="file-date">${datePart}</div>
             </div>
         `;
-
         li.onclick = () => {
             document.querySelectorAll('.file-item').forEach(i => i.classList.remove('active'));
             li.classList.add('active');
-            loadNotificationDetail(file, isPdf);
+            loadNotificationDetail(file);
             if (window.innerWidth <= 768) toggleMenu();
         };
-
         fileListEl.appendChild(li);
     });
 }
 
-// Load chi tiết thông báo
-function loadNotificationDetail(file, isPdf) {
+// ==== LOAD & PREVIEW NỘI DUNG (hỗ trợ mọi định dạng) ====
+function loadNotificationDetail(file) {
     const viewerEl = document.getElementById('viewer-container');
     const pathBarEl = document.getElementById('file-path-bar');
     const currentPathEl = document.getElementById('current-path');
-
+    
     currentPathEl.textContent = file.shareableURL;
     pathBarEl.style.display = 'flex';
+    viewerEl.innerHTML = '<div class="loading">Đang tải nội dung...</div>';
 
-    viewerEl.innerHTML = '<div class="message-box">Đang tải nội dung...</div>';
+    const url = file.fullPath;
+    const type = getFileType(file.filename);
 
-    if (isPdf) {
-        viewerEl.innerHTML = `<iframe src="${file.fullPath}" title="${file.filename}"></iframe>`;
-    } else {
-        fetch(file.fullPath)
+    if (type === 'pdf') {
+        viewerEl.innerHTML = `<iframe src="${url}" class="pdf-viewer"></iframe>`;
+
+    } else if (type === 'image') {
+        viewerEl.innerHTML = `
+            <div class="image-viewer">
+                <img src="${url}" alt="${file.filename}" loading="lazy">
+            </div>`;
+
+    } else if (type === 'video') {
+        viewerEl.innerHTML = `
+            <div class="media-viewer">
+                <video controls preload="metadata">
+                    <source src="${url}" type="video/${file.filename.split('.').pop()}">
+                    Trình duyệt không hỗ trợ video.
+                </video>
+            </div>`;
+
+    } else if (type === 'audio') {
+        viewerEl.innerHTML = `
+            <div class="media-viewer">
+                <audio controls>
+                    <source src="${url}" type="audio/${file.filename.split('.').pop()}">
+                    Trình duyệt không hỗ trợ audio.
+                </audio>
+                <p style="margin-top:12px;">${file.filename}</p>
+            </div>`;
+
+    } else if (type === 'html') {
+        fetch(url)
             .then(r => r.ok ? r.text() : Promise.reject())
             .then(html => viewerEl.innerHTML = `<div class="html-content-wrapper">${html}</div>`)
-            .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung.</div>');
+            .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung HTML.</div>');
+
+    } else if (type === 'text') {
+        fetch(url)
+            .then(r => r.text())
+            .then(text => viewerEl.innerHTML = `<pre class="text-viewer">${text.escapeHtml()}</pre>`)
+            .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được file text.</div>');
+
+    } else {
+        viewerEl.innerHTML = `
+            <div class="message-box">
+                <p>Không hỗ trợ xem trực tiếp định dạng này.</p>
+                <a href="${url}" download class="big-button" style="margin-top:20px;">
+                    📥 Tải xuống ${file.filename}
+                </a>
+            </div>`;
     }
 }
 
-// Trang 404
+// Helper escape HTML cho text
+String.prototype.escapeHtml = function() {
+    const div = document.createElement('div');
+    div.textContent = this;
+    return div.innerHTML;
+};
+
+// Các hàm cũ giữ nguyên
 function renderNotFound(container) {
     container.innerHTML = `
         <div class="message-box">
@@ -150,28 +208,14 @@ function renderNotFound(container) {
     `;
 }
 
-// Copy link
 function copyPath() {
     const url = document.getElementById('current-path').textContent;
     navigator.clipboard.writeText(url).then(() => {
         const btn = document.querySelector('#file-path-bar button');
-        const oldText = btn.innerHTML;
+        const old = btn.innerHTML;
         btn.innerHTML = '✓ Đã copy!';
         btn.style.color = '#27ae60';
-
-        setTimeout(() => {
-            btn.innerHTML = oldText;
-            btn.style.color = '';
-        }, 2000);
-    }).catch(() => {
-        const btn = document.querySelector('#file-path-bar button');
-        const oldText = btn.innerHTML;
-        btn.innerHTML = '✕ Lỗi copy';
-        btn.style.color = '#e74c3c';
-        setTimeout(() => {
-            btn.innerHTML = oldText;
-            btn.style.color = '';
-        }, 2000);
+        setTimeout(() => { btn.innerHTML = old; btn.style.color = ''; }, 2000);
     });
 }
 
@@ -185,26 +229,22 @@ function filterFiles() {
     renderMenuInSidebar(filtered);
 }
 
-// Router đơn giản
 function router() {
     let path = window.location.hash.slice(1) || '/';
-
     if (path.startsWith('/view/')) {
         const filename = decodeURIComponent(path.slice(6));
         const file = allFiles.find(f => f.filename === filename);
         if (file) {
-            const isPdf = filename.toLowerCase().endsWith('.pdf');
-            loadNotificationDetail(file, isPdf);
+            loadNotificationDetail(file);
             renderMenuInSidebar(allFiles);
+            document.querySelectorAll('.file-item').forEach(i => i.classList.remove('active'));
             return;
         }
     }
-
     const route = routes[path] || routes['/404'];
     showScreen(route);
 }
 
-// Khởi chạy
 window.addEventListener('hashchange', router);
 window.addEventListener('load', () => {
     router();
