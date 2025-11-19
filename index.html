@@ -6,14 +6,12 @@
     <title>Hệ Thống Thông Báo Nội Bộ</title>
     <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- Thư viện bcryptjs để kiểm tra hash mật khẩu ngay trên trình duyệt -->
-    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
-
     <style>
+        /* ================== GIAO DIỆN ĐĂNG NHẬP SIÊU ĐẸP - XANH DƯƠNG HIỆN ĐẠI ================== */
         #password-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.97);
+            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 50%, #2196f3 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -22,49 +20,117 @@
             color: white;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             text-align: center;
+            overflow: hidden;
         }
-        #password-overlay h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: #00c853;
+
+        #password-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="%23ffffff" stroke-width="1" opacity="0.1"/></svg>');
+            background-size: 60px;
+            animation: float 20s infinite linear;
         }
-        #password-overlay input {
-            padding: 16px;
-            font-size: 1.3rem;
-            width: 320px;
-            max-width: 90%;
-            margin: 20px 0;
-            text-align: center;
-            border: none;
-            border-radius: 8px;
+
+        @keyframes float {
+            from { transform: translate(0, 0); }
+            to { transform: translate(100px, -100px); }
         }
-        #password-overlay button {
-            padding: 14px 40px;
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 50px 60px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 380px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .login-container h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ffffff, #bbdefb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-container p {
             font-size: 1.2rem;
-            background: #00c853;
+            color: #bbdefb;
+            margin-bottom: 35px;
+        }
+
+        .login-container input {
+            width: 100%;
+            padding: 18px 20px;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            color: #0d47a1;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: all 0.3s;
+        }
+
+        .login-container input:focus {
+            outline: none;
+            transform: scale(1.02);
+            box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.4);
+        }
+
+        .login-container button {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            background: #2196f3;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 30px rgba(33, 150, 243, 0.5);
         }
-        #password-overlay button:hover { background: #00b140; }
-        .error { color: #ff5252; margin-top: 15px; font-size: 1.1rem; }
+
+        .login-container button:hover {
+            background: #1976d2;
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px rgba(33, 150, 243, 0.6);
+        }
+
+        .error {
+            color: #ff5252;
+            margin-top: 15px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            min-height: 30px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .error.show { opacity: 1; }
     </style>
 </head>
 <body>
 
-    <!-- ================== LỚP BẢO VỆ MẬT KHẨU ================== -->
+    <!-- ================== MÀN HÌNH ĐĂNG NHẬP ================== -->
     <div id="password-overlay">
-        <h1>Hệ Thống Thông Báo Nội Bộ</h1>
-        <p>Vui lòng nhập mật khẩu để truy cập</p>
-        <input type="password" id="password-input" placeholder="Nhập mật khẩu..." autofocus autocomplete="off">
-        <button onclick="checkPassword()">Đăng nhập</button>
-        <div class="error" id="error-msg"></div>
+        <div class="login-container">
+            <h1>Thông Báo Nội Bộ</h1>
+            <p>Chỉ dành cho nhân viên công ty</p>
+            <input type="password" id="password-input" placeholder="Nhập mật khẩu..." autofocus autocomplete="off">
+            <button onclick="checkPassword()" id="login-btn">Đăng Nhập</button>
+            <div class="error" id="error-msg"></div>
+        </div>
     </div>
-    <!-- ======================================================= -->
 
-    <!-- Nội dung chính (giống hệt file cũ của bạn) -->
+    <!-- ================== NỘI DUNG CHÍNH (giữ nguyên như cũ) ================== -->
     <button id="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
     <div id="sidebar">
         <div class="sidebar-header">
@@ -93,36 +159,59 @@
     </div>
 
     <script>
-        // ================== THAY ĐỔI CHỈ DÒNG NÀY THÔI ==================
-        const PASSWORD_HASH = "$2a$12$Ossp1XiuZWl0MFJpkkiVL.j/gVMcY.rH7I2Pg1sMRt/uiDt7yB2La";
-        // =================================================================
+        let CORRECT_PASSWORD = ""; // Sẽ được load từ .env
+
+        // Đọc file .env để lấy mật khẩu (chạy ngay khi load trang)
+        fetch('.env?' + Date.now())  // ? + timestamp để tránh cache
+            .then(response => response.text())
+            .then(text => {
+                const lines = text.split('\n');
+                lines.forEach(line => {
+                    if (line.trim().startsWith('PASSWORD=')) {
+                        CORRECT_PASSWORD = line.trim().substring(9).trim().replace(/['"]/g, '');
+                    }
+                });
+            })
+            .catch(() => console.log('.env không tồn tại hoặc lỗi (bình thường nếu chưa tạo)'));
 
         function checkPassword() {
             const input = document.getElementById('password-input').value.trim();
             const errorEl = document.getElementById('error-msg');
+            const btn = document.getElementById('login-btn');
 
             if (!input) {
                 errorEl.textContent = "⚠ Vui lòng nhập mật khẩu!";
+                errorEl.classList.add('show');
                 return;
             }
 
-            // So sánh bằng bcrypt (an toàn, không lộ mật khẩu gốc)
-            if (bcrypt.compareSync(input, PASSWORD_HASH)) {
-                document.getElementById('password-overlay').remove();
-                initApp(); // Khởi động hệ thống sau khi đăng nhập thành công
+            if (!CORRECT_PASSWORD) {
+                errorEl.textContent = "Đang tải cấu hình...";
+                errorEl.classList.add('show');
+                setTimeout(checkPassword, 500);
+                return;
+            }
+
+            if (input === CORRECT_PASSWORD) {
+                document.getElementById('password-overlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('password-overlay').remove();
+                    initApp();
+                }, 500);
             } else {
-                errorEl.textContent = "⚠ Đi kiếm ai vậy em chai =))) !";
+                errorEl.textContent = "❌ Mật khẩu sai, vui lòng thử lại!";
+                errorEl.classList.add('show');
                 document.getElementById('password-input').value = '';
                 document.getElementById('password-input').focus();
             }
         }
 
-        // Cho phép nhấn Enter
+        // Nhấn Enter
         document.getElementById('password-input').addEventListener('keyup', e => {
             if (e.key === 'Enter') checkPassword();
         });
 
-        // ================== TOÀN BỘ CODE GỐC CỦA BẠN (main.js) ==================
+        // ================== TOÀN BỘ HỆ THỐNG CŨ CỦA BẠN ==================
         function initApp() {
             const NOTIFICATION_FOLDER = (() => {
                 const currentPath = window.location.pathname;
@@ -132,178 +221,132 @@
             const API_ENDPOINT = NOTIFICATION_FOLDER + 'list.json';
             let allFiles = [];
 
-            const routes = {
-                '/': renderHome,
-                '/danh-sach': renderNotificationList,
-                '/404': renderNotFound
-            };
+            const routes = { '/': renderHome, '/danh-sach': renderNotificationList, '/404': renderNotFound };
 
-            function showScreen(renderFunction) {
+            function showScreen(fn) {
                 const viewerEl = document.getElementById('viewer-container');
                 const pathBarEl = document.getElementById('file-path-bar');
                 pathBarEl.style.display = 'none';
-                viewer['viewer-container'].innerHTML = '';
-                renderFunction(viewerEl);
+                viewerEl.innerHTML = '';
+                fn(viewerEl);
             }
 
-            function renderHome(container) {
-                container.innerHTML = `
-                    <div class="message-box home-screen">
-                        <h1 style="font-size:2.2rem;color:var(--primary);margin-bottom:16px;">
-                            Chào mừng đến Hệ thống Thông báo nội bộ
-                        </h1>
-                        <p style="font-size:1.1rem;color:#555;max-width:700px;margin:0 auto 30px;">
-                            Đây là nơi lưu trữ tất cả các thông báo, công văn, quyết định của công ty.
-                        </p>
-                        <div style="text-align:center;margin-top:40px;">
-                            <a href="#/danh-sach" class="big-button">
-                                Xem danh sách thông báo →
-                            </a>
-                        </div>
+            function renderHome(c) {
+                c.innerHTML = `<div class="message-box home-screen">
+                    <h1 style="font-size:2.2rem;color:var(--primary);margin-bottom:16px;">Chào mừng đến Hệ thống Thông báo nội bộ</h1>
+                    <p style="font-size:1.1rem;color:#555;max-width:700px;margin:0 auto 30px;">
+                        Đây là nơi lưu trữ tất cả các thông báo, công văn, quyết định của công ty.
+                    </p>
+                    <div style="text-align:center;margin-top:40px;">
+                        <a href="#/danh-sach" class="big-button">Xem danh sách thông báo →</a>
                     </div>
-                `;
+                </div>`;
             }
 
-            async function renderNotificationList(container) {
-                container.innerHTML = '<div class="loading">Đang tải danh sách thông báo...</div>';
+            async function renderNotificationList(c) {
+                c.innerHTML = '<div class="loading">Đang tải danh sách...</div>';
                 try {
-                    const response = await fetch(API_ENDPOINT);
-                    if (!response.ok) throw new Error('Không thể lấy danh sách');
-                    const fileList = await response.json();
-                    const baseURL = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-                    allFiles = fileList.map(file => ({
-                        filename: file.filename,
-                        dateStr: file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) ?
-                                 file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)[1].replace(/_/g, '-') : '0000-00-00',
-                        fullPath: NOTIFICATION_FOLDER + encodeURIComponent(file.filename),
-                        shareableURL: file.path.startsWith('http') ? file.path : baseURL + file.path
-                    }));
-                    allFiles.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+                    const res = await fetch(API_ENDPOINT);
+                    if (!res.ok) throw new Error('Không tải được');
+                    const list = await res.json();
+                    const base = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+                    allFiles = list.map(f => ({
+                        filename: f.filename,
+                        dateStr: (f.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) || [])[1]?.replace(/_/g, '-') || '0000-00-00',
+                        fullPath: NOTIFICATION_FOLDER + encodeURIComponent(f.filename),
+                        shareableURL: f.path.startsWith('http') ? f.path : base + f.path
+                    })).sort((a,b) => b.dateStr.localeCompare(a.dateStr));
+
                     renderMenuInSidebar(allFiles);
-                    container.innerHTML = `
-                        <div class="message-box">
-                            <h3>Chọn một thông báo từ menu bên trái</h3>
-                            <p>Hoặc sử dụng ô tìm kiếm để lọc nhanh.</p>
-                        </div>
-                    `;
-                } catch (err) {
-                    container.innerHTML = `<div class="message-box" style="color:red;">Lỗi: ${err.message}</div>`;
+                    c.innerHTML = `<div class="message-box"><h3>Chọn thông báo từ menu bên trái</h3><p>Hoặc dùng ô tìm kiếm để lọc nhanh.</p></div>`;
+                } catch (e) {
+                    c.innerHTML = `<div class="message-box" style="color:red;">Lỗi: ${e.message}</div>`;
                 }
             }
 
             function renderMenuInSidebar(files) {
-                const fileListEl = document.getElementById('file-list');
-                fileListEl.innerHTML = '';
-                if (files.length === 0) {
-                    fileListEl.innerHTML = '<li style="padding:30px;text-align:center;color:#888;">Chưa có thông báo nào.</li>';
+                const ul = document.getElementById('file-list');
+                ul.innerHTML = '';
+                if (!files.length) {
+                    ul.innerHTML = '<li style="padding:30px;text-align:center;color:#888;">Chưa có thông báo nào.</li>';
                     return;
                 }
-                files.forEach(file => {
+                files.forEach(f => {
                     const li = document.createElement('li');
                     li.className = 'file-item';
-                    const isPdf = file.filename.toLowerCase().endsWith('.pdf');
+                    const isPdf = f.filename.toLowerCase().endsWith('.pdf');
                     const icon = isPdf ? '📄' : '📝';
-                    const cleanName = file.filename
-                        .replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '')
-                        .replace(/\.(pdf|html?)$/i, '')
-                        .replace(/[-_]+/g, ' ')
-                        .trim();
+                    const name = f.filename.replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '').replace(/\.(pdf|html?)$/i, '').replace(/[-_]+/g, ' ').trim();
                     li.innerHTML = `
                         <span class="file-icon">${icon}</span>
                         <div class="file-info">
-                            <div class="file-name">${cleanName || file.filename}</div>
-                            <div class="file-date">${file.filename.split('_')[0].replace(/_/g, '-')}</div>
-                        </div>
-                    `;
+                            <div class="file-name">${name || f.filename}</div>
+                            <div class="file-date">${f.filename.split('_')[0].replace(/_/g, '-')}</div>
+                        </div>`;
                     li.onclick = () => {
                         document.querySelectorAll('.file-item').forEach(i => i.classList.remove('active'));
                         li.classList.add('active');
-                        loadNotificationDetail(file, isPdf);
+                        loadNotificationDetail(f, isPdf);
                         if (window.innerWidth <= 768) toggleMenu();
                     };
-                    fileListEl.appendChild(li);
+                    ul.appendChild(li);
                 });
             }
 
             function loadNotificationDetail(file, isPdf) {
-                const viewerEl = document.getElementById('viewer-container');
-                const pathBarEl = document.getElementById('file-path-bar');
-                const currentPathEl = document.getElementById('current-path');
-                currentPathEl.textContent = file.shareableURL;
-                pathBarEl.style.display = 'flex';
-                viewerEl.innerHTML = '<div class="message-box">Đang tải nội dung...</div>';
+                const viewer = document.getElementById('viewer-container');
+                const pathBar = document.getElementById('file-path-bar');
+                document.getElementById('current-path').textContent = file.shareableURL;
+                pathBar.style.display = 'flex';
+                viewer.innerHTML = '<div class="message-box">Đang tải...</div>';
                 if (isPdf) {
-                    viewerEl.innerHTML = `<iframe src="${file.fullPath}" title="${file.filename}"></iframe>`;
+                    viewer.innerHTML = `<iframe src="${file.fullPath}" style="width:100%;height:100vh;border:none;"></iframe>`;
                 } else {
-                    fetch(file.fullPath)
-                        .then(r => r.ok ? r.text() : Promise.reject())
-                        .then(html => viewerEl.innerHTML = `<div class="html-content-wrapper">${html}</div>`)
-                        .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung.</div>');
+                    fetch(file.fullPath).then(r => r.ok ? r.text() : Promise.reject())
+                        .then(h => viewer.innerHTML = `<div class="html-content-wrapper">${h}</div>`)
+                        .catch(() => viewer.innerHTML = '<div class="message-box">Không tải được nội dung.</div>');
                 }
             }
 
-            function renderNotFound(container) {
-                container.innerHTML = `
-                    <div class="message-box">
-                        <h3 style="font-size:2rem;color:#e74c3c;">404 - Không tìm thấy trang</h3>
-                        <p>Trang bạn yêu cầu không tồn tại.</p>
-                        <br>
-                        <a href="#/" style="color:var(--primary);text-decoration:underline;">← Quay về trang chủ</a>
-                    </div>
-                `;
+            function renderNotFound(c) {
+                c.innerHTML = `<div class="message-box"><h3 style="font-size:2rem;color:#e74c3c;">404 - Không tìm thấy</h3><p>Trang bạn yêu cầu không tồn tại.</p><br><a href="#/" style="color:var(--primary);text-decoration:underline;">← Quay về trang chủ</a></div>`;
             }
 
             function copyPath() {
-                const url = document.getElementById('current-path').textContent;
-                navigator.clipboard.writeText(url).then(() => {
-                    const btn = document.querySelector('#file-path-bar button');
-                    const old = btn.innerHTML;
-                    btn.innerHTML = '✓ Đã copy!';
-                    btn.style.color = '#27ae60';
-                    setTimeout(() => { btn.innerHTML = old; btn.style.color = ''; }, 2000);
+                navigator.clipboard.writeText(document.getElementById('current-path').textContent).then(() => {
+                    const b = document.querySelector('#file-path-bar button');
+                    const old = b.innerHTML;
+                    b.innerHTML = '✓ Đã copy!'; b.style.color = '#27ae60';
+                    setTimeout(() => { b.innerHTML = old; b.style.color = ''; }, 2000);
                 });
             }
 
-            function toggleMenu() {
-                document.getElementById('sidebar').classList.toggle('open');
-            }
+            function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
 
             function filterFiles() {
-                const query = document.getElementById('search-input').value.toLowerCase();
-                const filtered = allFiles.filter(f => f.filename.toLowerCase().includes(query));
-                renderMenuInSidebar(filtered);
+                const q = document.getElementById('search-input').value.toLowerCase();
+                renderMenuInSidebar(allFiles.filter(f => f.filename.toLowerCase().includes(q)));
             }
 
             function router() {
-                let path = window.location.hash.slice(1) || '/';
-                if (path.startsWith('/view/')) {
-                    const filename = decodeURIComponent(path.slice(6));
-                    const file = allFiles.find(f => f.filename === filename);
-                    if (file) {
-                        const isPdf = filename.toLowerCase().endsWith('.pdf');
-                        loadNotificationDetail(file, isPdf);
-                        renderMenuInSidebar(allFiles);
-                        return;
-                    }
+                let p = window.location.hash.slice(1) || '/';
+                if (p.startsWith('/view/')) {
+                    const fn = decodeURIComponent(p.slice(6));
+                    const f = allFiles.find(x => x.filename === fn);
+                    if (f) { loadNotificationDetail(f, fn.toLowerCase().endsWith('.pdf')); renderMenuInSidebar(allFiles); return; }
                 }
-                const route = routes[path] || routes['/404'];
-                showScreen(route);
+                const r = routes[p] || routes['/404'];
+                showScreen(r);
             }
 
             window.addEventListener('hashchange', router);
-            window.addEventListener('load', () => {
-                router();
-                if (allFiles.length === 0) {
-                    renderNotificationList(document.getElementById('viewer-container'));
-                }
-            });
+            window.addEventListener('load', () => { router(); if (!allFiles.length) renderNotificationList(document.getElementById('viewer-container')); });
         }
-        // =====================================================================
 
-        // Load script chặn DevTools (nếu bạn vẫn muốn giữ)
-        const blockScript = document.createElement('script');
-        blockScript.src = './assets/js/block-devtools.js';
-        document.body.appendChild(blockScript);
+        // Load block-devtools nếu cần
+        const s = document.createElement('script');
+        s.src = './assets/js/block-devtools.js';
+        document.body.appendChild(s);
     </script>
 </body>
 </html>

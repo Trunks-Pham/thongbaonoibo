@@ -1,0 +1,4 @@
+# Ignore local dev server
+node_modules
+.env.local
+.env
