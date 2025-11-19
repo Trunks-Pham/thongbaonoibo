@@ -1,15 +1,8 @@
 // assets/js/auth.js - Hộp đăng nhập nhỏ nhẹ, không làm hỏng giao diện cũ
 (async function() {
-    // Tải .env
-    let PASSWORD = '';
-    try {
-        const res = await fetch('.env?' + Date.now()); // tránh cache
-        const text = await res.text();
-        const match = text.match(/INTERNAL_PASSWORD\s*=\s*(.+)/i);
-        if (match) PASSWORD = match[1].trim();
-    } catch(e) {}
 
-    if (!PASSWORD) return; // không có .env thì bỏ qua
+    // HARD-CODE PASSWORD
+    const PASSWORD = "200898";
 
     // Tạo modal nhỏ xinh
     const modal = document.createElement('div');
