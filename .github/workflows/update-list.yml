@@ -32,21 +32,20 @@ jobs:
 
           const files = fs.readdirSync(folder)
             .filter(f => 
-              /\.(pdf|html?|jpe?g|png|gif|webp)$/i.test(f) &&   // ← thêm các định dạng ảnh
+              (f.toLowerCase().endsWith('.pdf') || f.toLowerCase().endsWith('.html')) &&
               f !== 'list.json' &&
               !f.startsWith('.')
             )
             .map(f => ({
               filename: f,
-              path: '/notifications/' + encodeURIComponent(f),
-              type: f.toLowerCase().match(/\.(pdf|html?|jpe?g|png|gif|webp)$/i)[1]  // thêm type để frontend biết
+              path: '/notifications/' + encodeURIComponent(f)
             }))
             .sort((a, b) => b.filename.localeCompare(a.filename));
 
           fs.writeFileSync(output, JSON.stringify(files, null, 2));
           console.log("Generated", output, "→", files.length, "files");
           EOF
-          
+
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

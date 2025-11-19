@@ -91,12 +91,7 @@ function renderMenuInSidebar(files) {
         li.className = 'file-item';
 
         const isPdf = file.filename.toLowerCase().endsWith('.pdf');
-        const icons = {
-            pdf: '📄',
-            jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️',
-            default: '📝'
-        };
-        const icon = icons[ext] || (isPdf ? '📄' : icons.default);
+        const icon = isPdf ? '📄' : '📝';
         const cleanName = file.filename
             .replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '')
             .replace(/\.(pdf|html?)$/i, '')
@@ -127,40 +122,19 @@ function loadNotificationDetail(file, isPdf) {
     const viewerEl = document.getElementById('viewer-container');
     const pathBarEl = document.getElementById('file-path-bar');
     const currentPathEl = document.getElementById('current-path');
+
     currentPathEl.textContent = file.shareableURL;
     pathBarEl.style.display = 'flex';
 
-    const ext = file.filename.toLowerCase().split('.').pop();
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+    viewerEl.innerHTML = '<div class="message-box">Đang tải nội dung...</div>';
 
-    viewerEl.innerHTML = '<div class="loading">Đang tải nội dung...</div>';
-
-    if (isPdf || ext === 'pdf') {
-        // PDF
-        viewerEl.innerHTML = `<iframe src="${file.fullPath}#toolbar=0&navpanes=0&scrollbar=0" title="${file.filename}"></iframe>`;
-    }
-    else if (imageExtensions.includes(ext)) {
-        // Ảnh (bao gồm GIF động)
-        viewerEl.innerHTML = `
-            <div style="padding:20px; text-align:center; background:#fff;">
-                <img src="${file.fullPath}" 
-                     alt="${file.filename}" 
-                     style="max-width:100%; height:auto; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.1);">
-                <p style="margin-top:20px; color:#666; font-size:0.9rem;">
-                    ${file.filename}
-                </p>
-            </div>`;
-    }
-    else {
-        // HTML hoặc các file khác (hiện tại chỉ hỗ trợ HTML)
+    if (isPdf) {
+        viewerEl.innerHTML = `<iframe src="${file.fullPath}" title="${file.filename}"></iframe>`;
+    } else {
         fetch(file.fullPath)
-            .then(r => r.ok ? r.text() : Promise.reject('Không tải được'))
-            .then(html => {
-                viewerEl.innerHTML = `<div class="html-content-wrapper">${html}</div>`;
-            })
-            .catch(() => {
-                viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung file.</div>';
-            });
+            .then(r => r.ok ? r.text() : Promise.reject())
+            .then(html => viewerEl.innerHTML = `<div class="html-content-wrapper">${html}</div>`)
+            .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung.</div>');
     }
 }
 
