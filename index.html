@@ -5,11 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Thông Báo Nội Bộ</title>
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- Thư viện bcryptjs để kiểm tra hash mật khẩu ngay trên trình duyệt -->
+    <script src="httpscdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+
+    <style>
+        #password-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.97);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            text-align: center;
+        }
+        #password-overlay h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #00c853;
+        }
+        #password-overlay input {
+            padding: 16px;
+            font-size: 1.3rem;
+            width: 320px;
+            max-width: 90%;
+            margin: 20px 0;
+            text-align: center;
+            border: none;
+            border-radius: 8px;
+        }
+        #password-overlay button {
+            padding: 14px 40px;
+            font-size: 1.2rem;
+            background: #00c853;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #password-overlay button:hover { background: #00b140; }
+        .error { color: #ff5252; margin-top: 15px; font-size: 1.1rem; }
+    </style>
 </head>
 <body>
 
-    <button id="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
+    <!-- ================== LỚP BẢO VỆ MẬT KHẨU ================== -->
+    <div id="password-overlay">
+        <h1>Hệ Thống Thông Báo Nội Bộ</h1>
+        <p>Vui lòng nhập mật khẩu để truy cập</p>
+        <input type="password" id="password-input" placeholder="Nhập mật khẩu..." autofocus autocomplete="off">
+        <button onclick="checkPassword()">Đăng nhập</button>
+        <div class="error" id="error-msg"></div>
+    </div>
+    <!-- ======================================================= -->
 
+    <!-- Nội dung chính (giống hệt file cũ của bạn) -->
+    <button id="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
     <div id="sidebar">
         <div class="sidebar-header">
             <h2>Thông Báo Nội Bộ</h2>
@@ -24,7 +80,7 @@
 
     <div id="main-content">
         <div id="file-path-bar" class="path-bar" style="display:none;">
-            <strong>Đường dẫn file:</strong> 
+            <strong>Đường dẫn file:</strong>
             <span id="current-path"></span>
             <button onclick="copyPath()" title="Copy đường dẫn">📋</button>
         </div>
@@ -35,7 +91,219 @@
             </div>
         </div>
     </div>
-    <script src="./assets/js/main.js"></script>
-    <script src="./assets/js/block-devtools.js"></script>
+
+    <script>
+        // ================== THAY ĐỔI CHỈ DÒNG NÀY THÔI ==================
+        const PASSWORD_HASH = "$2a$12$aDdU00MWI./ktvVyLuTKge3E8BEgBUEzGsEq2WDlpM6LR/OhleYEW";
+        // =================================================================
+
+        function checkPassword() {
+            const input = document.getElementById('password-input').value.trim();
+            const errorEl = document.getElementById('error-msg');
+
+            if (!input) {
+                errorEl.textContent = "⚠ Vui lòng nhập mật khẩu!";
+                return;
+            }
+
+            // So sánh bằng bcrypt (an toàn, không lộ mật khẩu gốc)
+            if (bcrypt.compareSync(input, PASSWORD_HASH)) {
+                document.getElementById('password-overlay').remove();
+                initApp(); // Khởi động hệ thống sau khi đăng nhập thành công
+            } else {
+                errorEl.textContent = "⚠ Đi kiếm ai vậy em chai =))) !";
+                document.getElementById('password-input').value = '';
+                document.getElementById('password-input').focus();
+            }
+        }
+
+        // Cho phép nhấn Enter
+        document.getElementById('password-input').addEventListener('keyup', e => {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        // ================== TOÀN BỘ CODE GỐC CỦA BẠN (main.js) ==================
+        function initApp() {
+            const NOTIFICATION_FOLDER = (() => {
+                const currentPath = window.location.pathname;
+                const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+                return basePath + 'notifications/';
+            })();
+            const API_ENDPOINT = NOTIFICATION_FOLDER + 'list.json';
+            let allFiles = [];
+
+            const routes = {
+                '/': renderHome,
+                '/danh-sach': renderNotificationList,
+                '/404': renderNotFound
+            };
+
+            function showScreen(renderFunction) {
+                const viewerEl = document.getElementById('viewer-container');
+                const pathBarEl = document.getElementById('file-path-bar');
+                pathBarEl.style.display = 'none';
+                viewer['viewer-container'].innerHTML = '';
+                renderFunction(viewerEl);
+            }
+
+            function renderHome(container) {
+                container.innerHTML = `
+                    <div class="message-box home-screen">
+                        <h1 style="font-size:2.2rem;color:var(--primary);margin-bottom:16px;">
+                            Chào mừng đến Hệ thống Thông báo nội bộ
+                        </h1>
+                        <p style="font-size:1.1rem;color:#555;max-width:700px;margin:0 auto 30px;">
+                            Đây là nơi lưu trữ tất cả các thông báo, công văn, quyết định của công ty.
+                        </p>
+                        <div style="text-align:center;margin-top:40px;">
+                            <a href="#/danh-sach" class="big-button">
+                                Xem danh sách thông báo →
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async function renderNotificationList(container) {
+                container.innerHTML = '<div class="loading">Đang tải danh sách thông báo...</div>';
+                try {
+                    const response = await fetch(API_ENDPOINT);
+                    if (!response.ok) throw new Error('Không thể lấy danh sách');
+                    const fileList = await response.json();
+                    const baseURL = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+                    allFiles = fileList.map(file => ({
+                        filename: file.filename,
+                        dateStr: file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) ?
+                                 file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)[1].replace(/_/g, '-') : '0000-00-00',
+                        fullPath: NOTIFICATION_FOLDER + encodeURIComponent(file.filename),
+                        shareableURL: file.path.startsWith('http') ? file.path : baseURL + file.path
+                    }));
+                    allFiles.sort((a, b) => b.dateStr.localeCompare(a.dateStr));
+                    renderMenuInSidebar(allFiles);
+                    container.innerHTML = `
+                        <div class="message-box">
+                            <h3>Chọn một thông báo từ menu bên trái</h3>
+                            <p>Hoặc sử dụng ô tìm kiếm để lọc nhanh.</p>
+                        </div>
+                    `;
+                } catch (err) {
+                    container.innerHTML = `<div class="message-box" style="color:red;">Lỗi: ${err.message}</div>`;
+                }
+            }
+
+            function renderMenuInSidebar(files) {
+                const fileListEl = document.getElementById('file-list');
+                fileListEl.innerHTML = '';
+                if (files.length === 0) {
+                    fileListEl.innerHTML = '<li style="padding:30px;text-align:center;color:#888;">Chưa có thông báo nào.</li>';
+                    return;
+                }
+                files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    const isPdf = file.filename.toLowerCase().endsWith('.pdf');
+                    const icon = isPdf ? '📄' : '📝';
+                    const cleanName = file.filename
+                        .replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '')
+                        .replace(/\.(pdf|html?)$/i, '')
+                        .replace(/[-_]+/g, ' ')
+                        .trim();
+                    li.innerHTML = `
+                        <span class="file-icon">${icon}</span>
+                        <div class="file-info">
+                            <div class="file-name">${cleanName || file.filename}</div>
+                            <div class="file-date">${file.filename.split('_')[0].replace(/_/g, '-')}</div>
+                        </div>
+                    `;
+                    li.onclick = () => {
+                        document.querySelectorAll('.file-item').forEach(i => i.classList.remove('active'));
+                        li.classList.add('active');
+                        loadNotificationDetail(file, isPdf);
+                        if (window.innerWidth <= 768) toggleMenu();
+                    };
+                    fileListEl.appendChild(li);
+                });
+            }
+
+            function loadNotificationDetail(file, isPdf) {
+                const viewerEl = document.getElementById('viewer-container');
+                const pathBarEl = document.getElementById('file-path-bar');
+                const currentPathEl = document.getElementById('current-path');
+                currentPathEl.textContent = file.shareableURL;
+                pathBarEl.style.display = 'flex';
+                viewerEl.innerHTML = '<div class="message-box">Đang tải nội dung...</div>';
+                if (isPdf) {
+                    viewerEl.innerHTML = `<iframe src="${file.fullPath}" title="${file.filename}"></iframe>`;
+                } else {
+                    fetch(file.fullPath)
+                        .then(r => r.ok ? r.text() : Promise.reject())
+                        .then(html => viewerEl.innerHTML = `<div class="html-content-wrapper">${html}</div>`)
+                        .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung.</div>');
+                }
+            }
+
+            function renderNotFound(container) {
+                container.innerHTML = `
+                    <div class="message-box">
+                        <h3 style="font-size:2rem;color:#e74c3c;">404 - Không tìm thấy trang</h3>
+                        <p>Trang bạn yêu cầu không tồn tại.</p>
+                        <br>
+                        <a href="#/" style="color:var(--primary);text-decoration:underline;">← Quay về trang chủ</a>
+                    </div>
+                `;
+            }
+
+            function copyPath() {
+                const url = document.getElementById('current-path').textContent;
+                navigator.clipboard.writeText(url).then(() => {
+                    const btn = document.querySelector('#file-path-bar button');
+                    const old = btn.innerHTML;
+                    btn.innerHTML = '✓ Đã copy!';
+                    btn.style.color = '#27ae60';
+                    setTimeout(() => { btn.innerHTML = old; btn.style.color = ''; }, 2000);
+                });
+            }
+
+            function toggleMenu() {
+                document.getElementById('sidebar').classList.toggle('open');
+            }
+
+            function filterFiles() {
+                const query = document.getElementById('search-input').value.toLowerCase();
+                const filtered = allFiles.filter(f => f.filename.toLowerCase().includes(query));
+                renderMenuInSidebar(filtered);
+            }
+
+            function router() {
+                let path = window.location.hash.slice(1) || '/';
+                if (path.startsWith('/view/')) {
+                    const filename = decodeURIComponent(path.slice(6));
+                    const file = allFiles.find(f => f.filename === filename);
+                    if (file) {
+                        const isPdf = filename.toLowerCase().endsWith('.pdf');
+                        loadNotificationDetail(file, isPdf);
+                        renderMenuInSidebar(allFiles);
+                        return;
+                    }
+                }
+                const route = routes[path] || routes['/404'];
+                showScreen(route);
+            }
+
+            window.addEventListener('hashchange', router);
+            window.addEventListener('load', () => {
+                router();
+                if (allFiles.length === 0) {
+                    renderNotificationList(document.getElementById('viewer-container'));
+                }
+            });
+        }
+        // =====================================================================
+
+        // Load script chặn DevTools (nếu bạn vẫn muốn giữ)
+        const blockScript = document.createElement('script');
+        blockScript.src = './assets/js/block-devtools.js';
+        document.body.appendChild(blockScript);
+    </script>
 </body>
 </html>
