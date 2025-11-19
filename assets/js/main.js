@@ -55,8 +55,8 @@ async function renderNotificationList(container) {
 
         allFiles = fileList.map(file => ({
             filename: file.filename,
-            dateStr: file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) ? 
-                     file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)[1].replace(/_/g, '-') : '0000-00-00',
+            dateStr: file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/) ?
+                file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)[1].replace(/_/g, '-') : '0000-00-00',
             fullPath: NOTIFICATION_FOLDER + encodeURIComponent(file.filename),
             shareableURL: file.path.startsWith('http') ? file.path : baseURL + file.path
         }));
@@ -92,11 +92,11 @@ function renderMenuInSidebar(files) {
 
         const isPdf = file.filename.toLowerCase().endsWith('.pdf');
         const icons = {
-    pdf: '📄',
-    jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️',
-    default: '📝'
-};
-const icon = icons[ext] || (isPdf ? '📄' : icons.default);
+            pdf: '📄',
+            jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️',
+            default: '📝'
+        };
+        const icon = icons[ext] || (isPdf ? '📄' : icons.default);
         const cleanName = file.filename
             .replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '')
             .replace(/\.(pdf|html?)$/i, '')
@@ -138,7 +138,7 @@ function loadNotificationDetail(file, isPdf) {
     if (isPdf || ext === 'pdf') {
         // PDF
         viewerEl.innerHTML = `<iframe src="${file.fullPath}#toolbar=0&navpanes=0&scrollbar=0" title="${file.filename}"></iframe>`;
-    } 
+    }
     else if (imageExtensions.includes(ext)) {
         // Ảnh (bao gồm GIF động)
         viewerEl.innerHTML = `
@@ -150,7 +150,7 @@ function loadNotificationDetail(file, isPdf) {
                     ${file.filename}
                 </p>
             </div>`;
-    } 
+    }
     else {
         // HTML hoặc các file khác (hiện tại chỉ hỗ trợ HTML)
         fetch(file.fullPath)
@@ -184,7 +184,7 @@ function copyPath() {
         const oldText = btn.innerHTML;
         btn.innerHTML = '✓ Đã copy!';
         btn.style.color = '#27ae60';
-        
+
         setTimeout(() => {
             btn.innerHTML = oldText;
             btn.style.color = '';
@@ -214,7 +214,7 @@ function filterFiles() {
 // Router đơn giản
 function router() {
     let path = window.location.hash.slice(1) || '/';
-    
+
     if (path.startsWith('/view/')) {
         const filename = decodeURIComponent(path.slice(6));
         const file = allFiles.find(f => f.filename === filename);
