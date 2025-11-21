@@ -38,11 +38,17 @@
     </div>
 
     <div id="main-content">
+        <!-- THANH LINK MỚI: có thêm nút rút gọn -->
         <div id="file-path-bar" class="path-bar" style="display:none;">
-            <strong>Đường dẫn file:</strong>
+            <strong>Link:</strong>
             <span id="current-path"></span>
-            <button onclick="copyPath()" title="Copy đường dẫn">📋</button>
+            <button onclick="copyPath()" title="Copy link đầy đủ">📋</button>
+            <button onclick="copyShortLink()" title="Copy link ngắn" id="shorten-btn" style="margin-left:8px;background:#1da1f2;color:white;border:none;padding:4px 10px;border-radius:4px;font-size:0.85rem;">
+                🔗 Ngắn
+            </button>
+            <span id="shorten-status" style="margin-left:8px;font-size:0.85rem;"></span>
         </div>
+
         <div id="viewer-container">
             <div class="message-box home-screen">
                 <h3>Chào mừng bạn đến Hệ thống Thông báo</h3>
