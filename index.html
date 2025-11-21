@@ -5,9 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Thông Báo Nội Bộ</title>
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <!-- ============ SOCIAL PREVIEW (Open Graph + Twitter Card) ============ -->
+    <meta property="og:site_name" content="Hệ thống Thông báo Nội bộ">
+    <meta property="og:type" content="article">
+    <meta property="og:title" id="og-title" content="Thông báo nội bộ">
+    <meta property="og:description" id="og-description" content="Xem chi tiết thông báo nội bộ">
+    <meta property="og:image" id="og-image" content="">
+    <meta property="og:url" id="og-url" content="">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="twitter-title" content="Thông báo nội bộ">
+    <meta name="twitter:description" id="twitter-description" content="Xem chi tiết thông báo nội bộ">
+    <meta name="twitter:image" id="twitter-image" content="">
+    <!-- ================================================================== -->
 </head>
 <body>
-
     <button id="menu-toggle" onclick="toggleMenu()">☰ Menu</button>
 
     <div id="sidebar">
@@ -24,12 +39,12 @@
 
     <div id="main-content">
         <div id="file-path-bar" class="path-bar" style="display:none;">
-            <strong>Đường dẫn file:</strong> 
+            <strong>Đường dẫn file:</strong>
             <span id="current-path"></span>
             <button onclick="copyPath()" title="Copy đường dẫn">📋</button>
         </div>
         <div id="viewer-container">
-            <div class="message-box">
+            <div class="message-box home-screen">
                 <h3>Chào mừng bạn đến Hệ thống Thông báo</h3>
                 <p>Vui lòng chọn một thông báo từ menu bên trái để xem nội dung.</p>
             </div>

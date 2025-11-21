@@ -64,7 +64,6 @@ async function renderNotificationList(container) {
     }
 }
 
-// ==== Xác định loại file ====
 function getFileType(filename) {
     const ext = filename.toLowerCase().split('.').pop();
     const images = ['jpg','jpeg','png','gif','webp','bmp','svg','avif','ico'];
@@ -79,7 +78,6 @@ function getFileType(filename) {
     return 'other';
 }
 
-// ==== Render menu với icon phù hợp ====
 function renderMenuInSidebar(files) {
     const fileListEl = document.getElementById('file-list');
     fileListEl.innerHTML = '';
@@ -125,7 +123,6 @@ function renderMenuInSidebar(files) {
     });
 }
 
-// ==== LOAD & PREVIEW NỘI DUNG (hỗ trợ mọi định dạng) ====
 function loadNotificationDetail(file) {
     const viewerEl = document.getElementById('viewer-container');
     const pathBarEl = document.getElementById('file-path-bar');
@@ -134,6 +131,10 @@ function loadNotificationDetail(file) {
     currentPathEl.textContent = file.shareableURL;
     pathBarEl.style.display = 'flex';
     viewerEl.innerHTML = '<div class="loading">Đang tải nội dung...</div>';
+
+    // === THÊM DÒNG NÀY ĐỂ CẬP NHẬT PREVIEW KHI CHIA SẺ ===
+    updateSocialPreview(file);
+    // ==================================================
 
     const url = file.fullPath;
     const type = getFileType(file.filename);
@@ -189,14 +190,12 @@ function loadNotificationDetail(file) {
     }
 }
 
-// Helper escape HTML cho text
 String.prototype.escapeHtml = function() {
     const div = document.createElement('div');
     div.textContent = this;
     return div.innerHTML;
 };
 
-// Các hàm cũ giữ nguyên
 function renderNotFound(container) {
     container.innerHTML = `
         <div class="message-box">
@@ -244,6 +243,49 @@ function router() {
     const route = routes[path] || routes['/404'];
     showScreen(route);
 }
+
+// ==================== HÀM MỚI: CẬP NHẬT PREVIEW KHI CHIA SẺ LINK ====================
+function updateSocialPreview(file) {
+    const cleanName = file.filename
+        .replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '')
+        .replace(/\.[^.]+$/, '')
+        .replace(/[-_]+/g, ' ')
+        .trim() || file.filename;
+
+    const rawDate = file.filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)?.[0];
+    const datePart = rawDate ? rawDate.replace(/_/g, '-') : '';
+
+    const title = cleanName + (datePart ? ` - Ngày ${datePart}` : '');
+    const description = `Thông báo nội bộ${datePart ? ' - ' + datePart : ''}`;
+    const url = file.shareableURL || window.location.href;
+
+    let image = '';
+    const type = getFileType(file.filename);
+
+    // Ưu tiên dùng chính file nếu là ảnh
+    if (type === 'image') {
+        image = file.fullPath;
+    } else {
+        // Fallback về logo công ty (tạo sẵn ảnh này để đẹp nhất)
+        image = window.location.origin + '/assets/images/logo-preview.png';
+        // Nếu chưa có ảnh logo, bạn có thể dùng ảnh chung:
+        image = 'https://thongbaonoibo.onrender.com/assets/images/default-preview.jpg';
+    }
+
+    // Cập nhật các thẻ meta
+    document.getElementById('og-title')?.setAttribute('content', title);
+    document.getElementById('og-description')?.setAttribute('content', description);
+    document.getElementById('og-image')?.setAttribute('content', image);
+    document.getElementById('og-url')?.setAttribute('content', url);
+
+    document.getElementById('twitter-title')?.setAttribute('content', title);
+    document.getElementById('twitter-description')?.setAttribute('content', description);
+    document.getElementById('twitter-image')?.setAttribute('content', image);
+
+    // Cập nhật luôn title trang cho đẹp
+    document.title = title + ' | Thông báo Nội bộ';
+}
+// =====================================================================
 
 window.addEventListener('hashchange', router);
 window.addEventListener('load', () => {
