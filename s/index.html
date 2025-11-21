@@ -36,7 +36,7 @@
         // Nếu là ảnh thì dùng chính file làm preview
         const ext = filename.toLowerCase().split('.').pop();
         if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
-            document.querySelector('meta[property="og:image"]').content = location.origin + '/notifications/' + encodeURIComponent(filename);
+            document.querySelector('meta[property="og:image"]').content = location.origin + '/notifications//' + encodeURIComponent(filename);
         }
 
         // CHUYỂN HƯỚNG NGAY LẬP TỨC (không thấy trang trắng)
