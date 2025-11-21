@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đang tải thông báo...</title>
+
+    <!-- OG Tags sẽ được JS tự động điền đúng tên file -->
+    <meta property="og:title"       content="Thông báo nội bộ">
+    <meta property="og:description" content="Thông báo nội bộ">
+    <meta property="og:image"       content="https://thongbaonoibo.onrender.com/assets/images/default-preview.jpg">
+    <meta property="og:url"         content="">
+    <meta property="og:type"        content="article">
+    <meta name="twitter:card"       content="summary_large_image">
+
+    <script>
+        // Lấy tên file từ URL: /s/2025-11-21_Quyet-dinh-bo-nhiem.pdf
+        const filename = decodeURIComponent(location.pathname.slice(3)); // bỏ "/s/"
+
+        // Tạo tên đẹp cho preview
+        const dateRaw = filename.match(/^(\d{4}[-_]\d{2}[-_]\d{2})/)?.[0] || '';
+        const dateStr = dateRaw.replace(/_/g, '-');
+        const cleanName = filename
+            .replace(/^(\d{4}[-_]\d{2}[-_]\d{2})[-_\s]*/, '')
+            .replace(/\.[^.]+$/, '')
+            .replace(/[-_]+/g, ' ')
+            .trim();
+
+        const title = cleanName + (dateStr ? ` - Ngày ${dateStr}` : '');
+
+        // Cập nhật preview (Zalo/FB sẽ đọc ngay)
+        document.querySelector('meta[property="og:title"]').content       = title + ' | Thông báo Nội bộ';
+        document.querySelector('meta[property="og:description"]').content = 'Thông báo nội bộ' + (dateStr ? ' - ' + dateStr : '');
+        document.querySelector('meta[property="og:url"]').content         = location.href;
+        document.title = title + ' | Thông báo Nội bộ';
+
+        // Nếu là ảnh thì dùng chính file làm preview
+        const ext = filename.toLowerCase().split('.').pop();
+        if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+            document.querySelector('meta[property="og:image"]').content = location.origin + '/notifications/' + encodeURIComponent(filename);
+        }
+
+        // CHUYỂN HƯỚNG NGAY LẬP TỨC (không thấy trang trắng)
+        location.replace(location.origin + '/?file=' + encodeURIComponent(filename));
+    </script>
+</head>
+<body></body> <!-- Không có nội dung gì cả → không flash -->
+</html>

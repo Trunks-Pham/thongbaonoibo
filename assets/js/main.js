@@ -59,8 +59,36 @@ async function renderNotificationList(container) {
                 <p>Hoặc sử dụng ô tìm kiếm để lọc nhanh.</p>
             </div>
         `;
+
+        // Sau khi load xong danh sách → kiểm tra xem có ?file= không
+        handleFileParam();
     } catch (err) {
         container.innerHTML = `<div class="message-box" style="color:red;">Lỗi: ${err.message}</div>`;
+    }
+}
+
+// Xử lý mở file từ link ngắn /s/xxx hoặc ?file=xxx
+function handleFileParam() {
+    const params = new URLSearchParams(location.search);
+    const filename = params.get('file');
+    if (!filename) return;
+
+    const file = allFiles.find(f => f.filename === filename);
+    if (file) {
+        loadNotificationDetail(file);
+        // Highlight trong menu
+        setTimeout(() => {
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('active');
+                const nameEl = item.querySelector('.file-name');
+                if (nameEl && nameEl.textContent.includes(file.filename.replace(/^[^_]*_/, '').replace(/\.[^.]+$/, ''))) {
+                    item.classList.add('active');
+                }
+            });
+        }, 500);
+
+        // Dọn URL cho sạch (giữ hash để router không reload)
+        history.replaceState(null, null, location.pathname + location.hash);
     }
 }
 
@@ -140,45 +168,17 @@ function loadNotificationDetail(file) {
     if (type === 'pdf') {
         viewerEl.innerHTML = `<iframe src="${url}" class="pdf-viewer"></iframe>`;
     } else if (type === 'image') {
-        viewerEl.innerHTML = `
-            <div class="image-viewer">
-                <img src="${url}" alt="${file.filename}" loading="lazy">
-            </div>`;
+        viewerEl.innerHTML = `<div class="image-viewer"><img src="${url}" alt="${file.filename}" loading="lazy"></div>`;
     } else if (type === 'video') {
-        viewerEl.innerHTML = `
-            <div class="media-viewer">
-                <video controls preload="metadata">
-                    <source src="${url}" type="video/${file.filename.split('.').pop()}">
-                    Trình duyệt không hỗ trợ video.
-                </video>
-            </div>`;
+        viewerEl.innerHTML = `<div class="media-viewer"><video controls preload="metadata"><source src="${url}" type="video/${file.filename.split('.').pop()}">Trình duyệt không hỗ trợ video.</video></div>`;
     } else if (type === 'audio') {
-        viewerEl.innerHTML = `
-            <div class="media-viewer">
-                <audio controls>
-                    <source src="${url}" type="audio/${file.filename.split('.').pop()}">
-                    Trình duyệt không hỗ trợ audio.
-                </audio>
-                <p style="margin-top:12px;">${file.filename}</p>
-            </div>`;
+        viewerEl.innerHTML = `<div class="media-viewer"><audio controls><source src="${url}" type="audio/${file.filename.split('.').pop()}"></audio><p style="margin-top:12px;">${file.filename}</p></div>`;
     } else if (type === 'html') {
-        fetch(url)
-            .then(r => r.ok ? r.text() : Promise.reject())
-            .then(html => viewerEl.innerHTML = `<div class="html-content-wrapper">${html}</div>`)
-            .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung HTML.</div>');
+        fetch(url).then(r => r.ok ? r.text() : Promise.reject()).then(html => viewerEl.innerHTML = `<div class="html-content-wrapper">${html}</div>`).catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được nội dung HTML.</div>');
     } else if (type === 'text') {
-        fetch(url)
-            .then(r => r.text())
-            .then(text => viewerEl.innerHTML = `<pre class="text-viewer">${text.escapeHtml()}</pre>`)
-            .catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được file text.</div>');
+        fetch(url).then(r => r.text()).then(text => viewerEl.innerHTML = `<pre class="text-viewer">${text.escapeHtml()}</pre>`).catch(() => viewerEl.innerHTML = '<div class="message-box">Không tải được file text.</div>');
     } else {
-        viewerEl.innerHTML = `
-            <div class="message-box">
-                <p>Không hỗ trợ xem trực tiếp định dạng này.</p>
-                <a href="${url}" download class="big-button" style="margin-top:20px;">
-                    📥 Tải xuống ${file.filename}
-                </a>
-            </div>`;
+        viewerEl.innerHTML = `<div class="message-box"><p>Không hỗ trợ xem trực tiếp định dạng này.</p><a href="${url}" download class="big-button" style="margin-top:20px;">📥 Tải xuống ${file.filename}</a></div>`;
     }
 }
 
@@ -189,14 +189,7 @@ String.prototype.escapeHtml = function() {
 };
 
 function renderNotFound(container) {
-    container.innerHTML = `
-        <div class="message-box">
-            <h3 style="font-size:2rem;color:#e74c3c;">404 - Không tìm thấy trang</h3>
-            <p>Trang bạn yêu cầu không tồn tại.</p>
-            <br>
-            <a href="#/" style="color:var(--primary);text-decoration:underline;">← Quay về trang chủ</a>
-        </div>
-    `;
+    container.innerHTML = `<div class="message-box"><h3 style="font-size:2rem;color:#e74c3c;">404 - Không tìm thấy trang</h3><p>Trang bạn yêu cầu không tồn tại.</p><br><a href="#/" style="color:var(--primary);text-decoration:underline;">← Quay về trang chủ</a></div>`;
 }
 
 function copyPath() {
@@ -220,23 +213,41 @@ function filterFiles() {
     renderMenuInSidebar(filtered);
 }
 
-function router() {
-    let path = window.location.hash.slice(1) || '/';
-    if (path.startsWith('/view/')) {
-        const filename = decodeURIComponent(path.slice(6));
-        const file = allFiles.find(f => f.filename === filename);
-        if (file) {
-            loadNotificationDetail(file);
-            renderMenuInSidebar(allFiles);
-            document.querySelectorAll('.file-item').forEach(i => i.classList.remove('active'));
-            return;
-        }
-    }
-    const route = routes[path] || routes['/404'];
-    showScreen(route);
+// ==================== LINK NGẮN ĐẸP DÙNG CHÍNH DOMAIN ====================
+function generateShortLink(file) {
+    return location.origin + '/s/' + encodeURIComponent(file.filename);
 }
 
-// ==================== CẬP NHẬT PREVIEW KHI CHIA SẺ ====================
+async function copyShortLink() {
+    const currentLongURL = document.getElementById('current-path').textContent;
+    const currentFile = allFiles.find(f => f.shareableURL === currentLongURL);
+    if (!currentFile) return;
+
+    const shortURL = generateShortLink(currentFile);
+    const btn = document.getElementById('shorten-btn');
+    const status = document.getElementById('shorten-status');
+
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    status.textContent = 'Đang copy...';
+
+    try {
+        await navigator.clipboard.writeText(shortURL);
+        status.textContent = '✓ Đã copy link ngắn đẹp!';
+        status.style.color = '#27ae60';
+    } catch (e) {
+        status.textContent = 'Lỗi copy';
+        status.style.color = '#e74c3c';
+    }
+
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '🔗 Ngắn';
+        status.textContent = '';
+    }, 2500);
+}
+// =====================================================================
+
 function updateSocialPreview(file) {
     const cleanName = file.filename
         .replace(/^\d{4}[-_]\d{2}[-_]\d{2}[-_]\s*/, '')
@@ -251,74 +262,35 @@ function updateSocialPreview(file) {
     const description = `Thông báo nội bộ${datePart ? ' - ' + datePart : ''}`;
     const url = file.shareableURL || window.location.href;
 
-    let image = '';
-    const type = getFileType(file.filename);
-    if (type === 'image') {
+    let image = 'https://thongbaonoibo.onrender.com/assets/images/default-preview.jpg';
+    if (getFileType(file.filename) === 'image') {
         image = file.fullPath;
-    } else {
-        image = window.location.origin + '/assets/images/logo-preview.png';
-        image = 'https://thongbaonoibo.onrender.com/assets/images/default-preview.jpg';
     }
 
     document.getElementById('og-title')?.setAttribute('content', title);
     document.getElementById('og-description')?.setAttribute('content', description);
     document.getElementById('og-image')?.setAttribute('content', image);
     document.getElementById('og-url')?.setAttribute('content', url);
-
     document.getElementById('twitter-title')?.setAttribute('content', title);
     document.getElementById('twitter-description')?.setAttribute('content', description);
     document.getElementById('twitter-image')?.setAttribute('content', image);
-
     document.title = title + ' | Thông báo Nội bộ';
 }
 
-// ==================== RÚT GỌN LINK BẰNG TINYURL (không cần backend) ====================
-async function shortenURL(longURL) {
-    try {
-        const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longURL)}`);
-        if (response.ok) {
-            const shortURL = await response.text();
-            return shortURL.trim();
+function router() {
+    let path = window.location.hash.slice(1) || '/';
+    if (path.startsWith('/view/')) {
+        const filename = decodeURIComponent(path.slice(6));
+        const file = allFiles.find(f => f.filename === filename);
+        if (file) {
+            loadNotificationDetail(file);
+            renderMenuInSidebar(allFiles);
+            return;
         }
-    } catch (e) {
-        console.warn('TinyURL tạm thời lỗi:', e);
     }
-    return longURL;
+    const route = routes[path] || routes['/404'];
+    showScreen(route);
 }
-
-async function copyShortLink() {
-    const longURL = document.getElementById('current-path').textContent.trim();
-    const btn = document.getElementById('shorten-btn');
-    const status = document.getElementById('shorten-status');
-
-    btn.disabled = true;
-    btn.textContent = '⏳';
-    status.textContent = 'Đang tạo link ngắn...';
-    status.style.color = '#3498db';
-
-    const shortURL = await shortenURL(longURL);
-
-    try {
-        await navigator.clipboard.writeText(shortURL);
-        if (shortURL !== longURL && shortURL.startsWith('https://tinyurl.com/')) {
-            status.textContent = '✓ Đã copy link ngắn!';
-            status.style.color = '#27ae60';
-        } else {
-            status.textContent = '⚠️ Copy link gốc (dịch vụ tạm lỗi)';
-            status.style.color = '#e67e22';
-        }
-    } catch (err) {
-        status.textContent = 'Lỗi copy!';
-        status.style.color = '#e74c3c';
-    }
-
-    setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = '🔗 Ngắn';
-        status.textContent = '';
-    }, 3000);
-}
-// =====================================================================
 
 window.addEventListener('hashchange', router);
 window.addEventListener('load', () => {
