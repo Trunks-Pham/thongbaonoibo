@@ -213,12 +213,8 @@ function filterFiles() {
     renderMenuInSidebar(filtered);
 }
 
-// ==================== LINK NGẮN ĐẸP DÙNG CHÍNH DOMAIN ====================
-function generateShortLink(file) {
-    return location.origin + '/s/' + encodeURIComponent(file.filename);
-}
-
 // ==================== TẠO LINK BIT.LY THẬT (có thống kê) ====================
+// ============================ TINYURL REAL SHORT URL ============================
 async function copyShortLink() {
     const currentLongURL = document.getElementById('current-path').textContent;
     const currentFile = allFiles.find(f => f.shareableURL === currentLongURL);
@@ -230,55 +226,32 @@ async function copyShortLink() {
 
     btn.disabled = true;
     btn.innerHTML = 'Đang tạo...';
-    status.textContent = 'Đang tạo link bit.ly...';
+    status.textContent = 'Đang tạo link...';
     status.style.color = '#1da1f2';
 
-    const longURL = location.origin + '//notifications/' + encodeURIComponent(currentFile.filename);
-
-    // Mình mã hóa rồi bạn liếm hộ +))))))))))))0
-    const BITLY_TOKEN = '2cf28198375d3d4349a5a38c4e540931a5b75ea8'; 
-
     try {
-        const response = await fetch('https://api-ssl.bitly.com/v4/shorten', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + BITLY_TOKEN,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                long_url: longURL,
-                domain: "bit.ly"
-            })
-        });
+        const apiURL =
+            "https://tinyurl.com/api-create.php?url=" +
+            encodeURIComponent(currentLongURL);
 
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.message || 'Bitly lỗi');
-        }
+        const shortURL = await fetch(apiURL).then(r => r.text());
 
-        const data = await response.json();
-        const bitlyURL = data.link;
+        await navigator.clipboard.writeText(shortURL);
 
-        await navigator.clipboard.writeText(bitlyURL);
-        status.textContent = 'Đã copy bit.ly!';
+        status.textContent = 'Đã copy!';
         status.style.color = '#27ae60';
-        btn.innerHTML = 'bit.ly';
-
+        btn.innerHTML = 'Link';
     } catch (err) {
-        console.warn('Bit.ly lỗi, dùng link /s/', err);
-        const fallbackURL = longURL;
-        await navigator.clipboard.writeText(fallbackURL);
-        status.textContent = 'Lỗi bit.ly → copy link /s/';
-        status.style.color = '#e67e22';
+        status.textContent = 'Lỗi tạo link!';
+        status.style.color = '#e74c3c';
     }
 
     setTimeout(() => {
         btn.disabled = false;
         btn.innerHTML = originalText;
         status.textContent = '';
-        status.style.color = '';
     }, 3000);
-}
+} 
 // =====================================================================
 
 function updateSocialPreview(file) {

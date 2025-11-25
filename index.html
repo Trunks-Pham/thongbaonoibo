@@ -1,102 +1,57 @@
 <!DOCTYPE html>
 <html lang="vi">
-<!DOCTYPE html>
-<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thông Báo Nội Bộ | Công Ty</title>
+    <title>Hệ Thống Thông Báo Nội Bộ</title>
+    <link rel="stylesheet" href="assets/css/style.css">
 
-    <!-- ĐẶC BIỆT QUAN TRỌNG - ÉP PREVIEW ĐỒNG NHẤT -->
-    <link rel="canonical" href="https://thongbaonoibo.onrender.com" />
-    <meta property="og:url" content="https://thongbaonoibo.onrender.com" />
-
-    <!-- Open Graph -->
-    <meta property="og:site_name" content="Hệ thống Thông Báo Nội Bộ Công Ty">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Thông Báo Nội Bộ">
-    <meta property="og:description" content="Xem thông báo, công văn, quyết định mới nhất — truy cập nhanh, xem trực tuyến, chia sẻ tiện lợi.">
-    <meta property="og:image" content="https://thongbaonoibo.onrender.com/assets/images/preview.jpg">
+    <!-- SOCIAL PREVIEW -->
+    <meta property="og:site_name" content="Hệ thống Thông báo Nội bộ">
+    <meta property="og:type" content="article">
+    <meta property="og:title" id="og-title" content="Thông báo nội bộ">
+    <meta property="og:description" id="og-description" content="Xem chi tiết thông báo nội bộ">
+    <meta property="og:image" id="og-image" content="">
+    <meta property="og:url" id="og-url" content="">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Thông Báo Nội Bộ Công Ty">
-    <meta property="og:locale" content="vi_VN">
-
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Thông Báo Nội Bộ">
-    <meta name="twitter:description" content="Xem thông báo, công văn, quyết định mới nhất — truy cập nhanh, xem trực tuyến, chia sẻ tiện lợi.">
-    <meta name="twitter:image" content="https://thongbaonoibo.onrender.com/assets/images/preview.jpg">
-
-    <!-- Các link CSS, font như cũ của bạn... -->
-    <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-    
-    <meta name="theme-color" content="#2563eb">
+    <meta name="twitter:title" id="twitter-title" content="Thông báo nội bộ">
+    <meta name="twitter:description" id="twitter-description" content="Xem chi tiết thông báo nội bộ">
+    <meta name="twitter:image" id="twitter-image" content="">
 </head>
-
 <body>
-    <!-- Nút menu mobile -->
-    <button id="menu-toggle" aria-label="Mở menu" onclick="toggleMenu()">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Sidebar -->
-    <aside id="sidebar">
+    <button id="menu-toggle" onclick="toggleMenu()">Menu</button>
+    <div id="sidebar">
         <div class="sidebar-header">
-            <div class="logo">
-                <i class="fas fa-bell"></i>
-                <h2>Thông Báo</h2>
-            </div>
-            <button class="close-btn" onclick="toggleMenu()">×</button>
+            <h2>Thông Báo Nội Bộ</h2>
         </div>
-
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="search-input" placeholder="Tìm kiếm thông báo..." oninput="filterFiles()" autocomplete="off">
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Tìm thông báo..." oninput="filterFiles()">
         </div>
-
         <ul id="file-list">
-            <!-- Danh sách file sẽ được JS render -->
+            <li class="loading">Đang tải danh sách thông báo...</li>
         </ul>
-    </aside>
+    </div>
 
-    <!-- Main Content -->
-    <main id="main-content">
-        <!-- Thanh link chia sẻ -->
-        <div id="file-path-bar" class="path-bar">
-            <div class="path-info">
-                <i class="fas fa-link"></i>
-                <span id="current-path">Đang tải...</span>
-            </div>
-            <div class="path-actions">
-                <button onclick="copyPath()" title="Copy link đầy đủ">
-                    <i class="fas fa-copy"></i> Copy
-                </button>
-                <button id="shorten-btn" onclick="copyShortLink()" title="Tạo link ngắn t.ly">
-                    <i class="fas fa-external-link-alt"></i> Link ngắn
-                </button>
-                <span id="shorten-status"></span>
-            </div>
+    <div id="main-content">
+        <div id="file-path-bar" class="path-bar" style="display:none;">
+            <strong>Link:</strong>
+            <span id="current-path"></span>
+            <button onclick="copyPath()" title="Copy link đầy đủ">Copy</button>
+            <button onclick="copyShortLink()" title="Tạo & copy link bit.ly" id="shorten-btn" style="margin-left:8px;background:#1da1f2;color:white;border:none;padding:4px 10px;border-radius:4px;font-size:0.85rem;">
+                Link 
+            </button>
+            <span id="shorten-status" style="margin-left:8px;font-size:0.85rem;font-weight:bold;"></span>
         </div>
 
-        <!-- Nội dung chính -->
         <div id="viewer-container">
-            <!-- Trang chủ -->
-            <div class="welcome-screen">
-                <div class="welcome-content">
-                    <i class="fas fa-envelope-open-text welcome-icon"></i>
-                    <h1>Chào mừng đến Hệ thống Thông báo</h1>
-                    <p>Chọn một thông báo từ menu bên trái để xem chi tiết</p>
-                    <a href="#/danh-sach" class="btn-primary">
-                        <i class="fas fa-list"></i> Xem danh sách
-                    </a>
-                </div>
+            <div class="message-box home-screen">
+                <h3>Chào mừng bạn đến Hệ thống Thông báo</h3>
+                <p>Vui lòng chọn một thông báo từ menu bên trái để xem nội dung.</p>
             </div>
         </div>
-    </main>
+    </div>
 
     <script src="./assets/js/main.js"></script>
     <script src="./assets/js/block-devtools.js"></script>
