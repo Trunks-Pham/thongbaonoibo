@@ -218,33 +218,66 @@ function generateShortLink(file) {
     return location.origin + '/s/' + encodeURIComponent(file.filename);
 }
 
+// ==================== TẠO LINK BIT.LY THẬT (có thống kê) ====================
 async function copyShortLink() {
     const currentLongURL = document.getElementById('current-path').textContent;
     const currentFile = allFiles.find(f => f.shareableURL === currentLongURL);
     if (!currentFile) return;
 
-    const shortURL = generateShortLink(currentFile);
     const btn = document.getElementById('shorten-btn');
     const status = document.getElementById('shorten-status');
+    const originalText = btn.textContent;
 
     btn.disabled = true;
-    btn.textContent = '⏳';
-    status.textContent = 'Đang copy...';
+    btn.innerHTML = 'Đang tạo...';
+    status.textContent = 'Đang tạo link bit.ly...';
+    status.style.color = '#1da1f2';
+
+    const longURL = location.origin + '//notifications/' + encodeURIComponent(currentFile.filename);
+
+    // Mình mã hóa rồi bạn liếm hộ +))))))))))))0
+    const BITLY_TOKEN = '2cf28198375d3d4349a5a38c4e540931a5b75ea8'; 
 
     try {
-        await navigator.clipboard.writeText(shortURL);
-        status.textContent = '✓ Đã copy link ngắn đẹp!';
+        const response = await fetch('https://api-ssl.bitly.com/v4/shorten', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + BITLY_TOKEN,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                long_url: longURL,
+                domain: "bit.ly"
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Bitly lỗi');
+        }
+
+        const data = await response.json();
+        const bitlyURL = data.link;
+
+        await navigator.clipboard.writeText(bitlyURL);
+        status.textContent = 'Đã copy bit.ly!';
         status.style.color = '#27ae60';
-    } catch (e) {
-        status.textContent = 'Lỗi copy';
-        status.style.color = '#e74c3c';
+        btn.innerHTML = 'bit.ly';
+
+    } catch (err) {
+        console.warn('Bit.ly lỗi, dùng link /s/', err);
+        const fallbackURL = longURL;
+        await navigator.clipboard.writeText(fallbackURL);
+        status.textContent = 'Lỗi bit.ly → copy link /s/';
+        status.style.color = '#e67e22';
     }
 
     setTimeout(() => {
         btn.disabled = false;
-        btn.textContent = '🔗 Ngắn';
+        btn.innerHTML = originalText;
         status.textContent = '';
-    }, 2500);
+        status.style.color = '';
+    }, 3000);
 }
 // =====================================================================
 
